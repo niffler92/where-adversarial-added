@@ -33,8 +33,6 @@ class Analysis:
         self.loader = islice(iter(val_loader), args.img_first, args.img_last+1)
         self.model = get_model(args)
         self.art = to_np(get_artifact(self.model, val_loader, args) > 0)
-        #self.attack = getattr(attacks, args.attack)(self.model, args)
-        #self.defense = getattr(defenses, args.defense)(self.model, args)
         self.eps = np.linspace(-args.max_eps, args.max_eps, args.len_eps)
         self.args = args
         self.kwargs = kwargs
@@ -52,7 +50,6 @@ class Analysis:
 
     def analysis(self):
         names = self.get_names()
-        #levels = np.arange(-1, self.args.num_classes)
         figsize = (5,5)
         criterion = nn.CrossEntropyLoss()
 
@@ -64,10 +61,6 @@ class Analysis:
             if self.args.cuda:
                 image = image.cuda()
                 label = label.cuda()
-            #adv_image = self.attack.generate(image, label)[0]
-            #adv_diff = to_np(adv_image - image)
-            #def_image = self.defense.generate(adv_image, label)[0]
-            #def_diff = to_np(def_image - image)
 
             image = to_var(image)
             label = to_var(label)
@@ -82,11 +75,6 @@ class Analysis:
             nart_image = grad*(1 - self.art)
             nart_image = nart_image/np.linalg.norm(nart_image)
 
-            #X = np.vstack([art_image.flatten(), nart_image.flatten()]).T
-            #X = np.linalg.inv(X.T@X)@X.T
-            #adv_loc = X@adv_diff.flatten()
-            #def_loc = X@def_diff.flatten()
-
             for i, e1 in enumerate(self.eps):
                 for j, e2 in enumerate(self.eps):
                     eps_image = image + to_var(torch.FloatTensor(art_image*e1 + nart_image*e2))
@@ -100,8 +88,6 @@ class Analysis:
             fig = plt.figure(figsize=figsize)
             ax = fig.add_subplot(111)
             ax.pcolormesh(self.eps, self.eps, preds, cmap=cmap, vmin=0, vmax=self.args.num_classes-1)
-            # ax.contourf(self.eps, self.eps, preds, levels=levels, cmap=cmap)
-            # ax.contour(self.eps, self.eps, preds, colors='k', linewidths=2, linestyles='solid')
             ax.axvline(0, color='k', linestyle=':', alpha=0.5)
             ax.axhline(0, color='k', linestyle=':', alpha=0.5)
 
@@ -114,27 +100,6 @@ class Analysis:
                 color = colors(label/(self.args.num_classes-1))
                 handles.append(Patch(facecolor=color, edgecolor=None, label=names[label]))
             ax.legend(handles=handles, loc='upper left')
-
-            """
-            handles = [Line2D([0], [0], marker='s', color='k', label='Clean'),
-                       Line2D([0], [0], marker='x', color='k', label='Attack'),
-                       Line2D([0], [0], marker='o', color='k', label='Defense')]
-            ax.legend(handles=handles, loc='upper left')
-
-            axin = zoomed_inset_axes(ax, self.args.max_eps/8, loc='lower right')
-            axin.contourf(self.eps, self.eps, preds, levels=[-1,0,1], cmap=cmap)
-            axin.axvline(0, color='k', linestyle=':', alpha=0.5)
-            axin.axhline(0, color='k', linestyle=':', alpha=0.5)
-            axin.plot([0], [0], marker='s', color='k', label='Clean')
-            axin.plot([adv_loc[1]], [adv_loc[0]], marker='x', color='k', label='Attack')
-            axin.plot([def_loc[1]], [def_loc[0]], marker='o', color='k', label='Defense')
-
-            axin.set_xlim(-1.5,1.5)
-            axin.set_ylim(-1.5,1.5)
-            axin.xaxis.set_visible(False)
-            axin.yaxis.set_visible(False)
-            mark_inset(ax, axin, loc1=1, loc2=3, fc="None", ec="0.7")
-            """
             fig.tight_layout()
 
             fig.savefig('contour.png')

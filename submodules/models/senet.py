@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 
 __all__ = ['SENet18']
 
@@ -16,20 +16,20 @@ class BasicBlock(nn.Module):
     def __init__(self, in_planes, planes, stride=1, nlayer=0, nstride=0, args=None, **kwargs):
         super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn1 = CustomNorm2d(planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn2 = CustomNorm2d(planes, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(planes)
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != planes:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_planes, planes, kernel_size=1, stride=stride, bias=False),
-                CustomNorm2d(planes, args, **kwargs)
+                nn.BatchNorm2d(planes)
             )
         name = 'Block_' + str(nlayer) + '_' + str(nstride) + '_'
-        self.activation1 = get_activation(args.activation, name+'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name+'fc1', args, **kwargs)
-        self.activation3 = get_activation(args.activation, name+'out', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
 
         # SE layers
         self.fc1 = nn.Conv2d(planes, planes//16, kernel_size=1)  # Use nn.Conv2d instead of nn.Linear
@@ -54,9 +54,9 @@ class BasicBlock(nn.Module):
 class PreActBlock(nn.Module):
     def __init__(self, in_planes, planes, stride=1, nlayer=0, nstride=0, args=None, **kwargs):
         super(PreActBlock, self).__init__()
-        self.bn1 = CustomNorm2d(in_planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(in_planes)
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn2 = CustomNorm2d(planes, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
 
         if stride != 1 or in_planes != planes:
@@ -69,9 +69,9 @@ class PreActBlock(nn.Module):
         self.fc2 = nn.Conv2d(planes//16, planes, kernel_size=1)
 
         name = 'PreActBlock_' + str(nlayer) + '_' + str(nstride) + '_'
-        self.activation1 = get_activation(args.activation, name+'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name+'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, name+'fc1', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.activation1(self.bn1(x))
@@ -95,12 +95,12 @@ class SENet(nn.Module):
         super(SENet, self).__init__()
         self.args = args
         self.kwargs = kwargs
-        self.activation = get_activation(args.activation, 'conv1', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
         self.in_planes = 64
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = CustomNorm2d(64, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block,  64, num_blocks[0], stride=1, nlayer=0)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, nlayer=1)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2, nlayer=2)

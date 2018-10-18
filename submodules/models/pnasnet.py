@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 
 __all__ = ['PNASNetA', 'PNASNetB']
 
@@ -20,7 +20,7 @@ class SepConv(nn.Module):
                                kernel_size, stride,
                                padding=(kernel_size-1)//2,
                                bias=False, groups=in_planes)
-        self.bn1 = CustomNorm2d(out_planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(out_planes)
 
     def forward(self, x):
         return self.bn1(self.conv1(x))
@@ -33,9 +33,9 @@ class CellA(nn.Module):
         self.sep_conv1 = SepConv(in_planes, out_planes, kernel_size=7, stride=stride, args=args, **kwargs)
         if stride==2:
             self.conv1 = nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=1, padding=0, bias=False)
-            self.bn1 = CustomNorm2d(out_planes, args, **kwargs)
+            self.bn1 = nn.BatchNorm2d(out_planes)
 
-        self.activation = get_activation(args.activation, 'CellA_'+str(nlayer)+'_'+str(ncell)+'_out', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         y1 = self.sep_conv1(x)
@@ -55,14 +55,14 @@ class CellB(nn.Module):
         self.sep_conv3 = SepConv(in_planes, out_planes, kernel_size=5, stride=stride, args=args, **kwargs)
         if stride==2:
             self.conv1 = nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=1, padding=0, bias=False)
-            self.bn1 = CustomNorm2d(out_planes, args, **kwargs)
+            self.bn1 = nn.BatchNorm2d(out_planes)
         # Reduce channels
         self.conv2 = nn.Conv2d(2*out_planes, out_planes, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn2 = CustomNorm2d(out_planes, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(out_planes)
 
-        self.activation1 = get_activation(args.activation, 'CellB_'+str(nlayer)+'_'+str(ncell)+'_conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'CellB_'+str(nlayer)+'_'+str(ncell)+'_conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'CellB_'+str(nlayer)+'_'+str(ncell)+'_out', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         # Left branch
@@ -84,13 +84,13 @@ class PNASNet(nn.Module):
         super(PNASNet, self).__init__()
         self.args = args
         self.kwargs = kwargs
-        self.activation = get_activation(args.activation, 'conv1', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
         self.in_planes = num_planes
         self.cell_type = cell_type
 
         self.conv1 = nn.Conv2d(3, num_planes, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = CustomNorm2d(num_planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(num_planes)
 
         self.layer1 = self._make_layer(num_planes, num_cells=6, nlayer=0)
         self.layer2 = self._downsample(num_planes*2, nlayer=1)

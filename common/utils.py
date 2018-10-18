@@ -12,7 +12,6 @@ import os
 
 from common.logger import Logger
 import settings
-from nsml import DATASET_PATH, HAS_DATASET
 
 
 def update_train_dir(args):
@@ -74,18 +73,8 @@ def find_class_by_name(name, modules):
 
 def get_checkpoint(args=None):
     if args.ckpt_name:
-        if DATASET_PATH:
-            root = os.path.join(DATASET_PATH, 'train', 'checkpoints', 'checkpoints_ace', args.ckpt_name)
-            if HAS_DATASET and os.path.isfile(root):
-                print("Running on NSML")
-                return root
         root = os.path.join('checkpoints', args.ckpt_name)
     else:
-        if DATASET_PATH:
-            root = os.path.join(DATASET_PATH, 'train', 'checkpoints', 'checkpoints_ace', args.model)
-            if HAS_DATASET and os.path.isfile(root):
-                print("Running on NSML")
-                return root
         root = os.path.join('checkpoints', args.dataset, args.model)
     assert os.path.isfile(root), "Checkpoint file does not exist."
     print("Running on Local")

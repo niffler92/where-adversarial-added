@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 
 __all__ = ['GoogLeNet']
 
@@ -15,39 +15,39 @@ class Inception(nn.Module):
         # 1x1 conv branch
         self.b1 = nn.Sequential(
             nn.Conv2d(in_planes, n1x1, kernel_size=1),
-            CustomNorm2d(n1x1, args, **kwargs),
-            get_activation(args.activation, name+'_b1', args, **kwargs)
+            nn.BatchNorm2d(n1x1),
+            get_activation(args.activation, args, **kwargs)
         )
 
         # 1x1 conv -> 3x3 conv branch
         self.b2 = nn.Sequential(
             nn.Conv2d(in_planes, n3x3red, kernel_size=1),
-            CustomNorm2d(n3x3red, args, **kwargs),
-            get_activation(args.activation, name+'_b2_conv1', args, **kwargs),
+            nn.BatchNorm2d(n3x3red),
+            get_activation(args.activation, args, **kwargs)
             nn.Conv2d(n3x3red, n3x3, kernel_size=3, padding=1),
-            CustomNorm2d(n3x3, args, **kwargs),
-            get_activation(args.activation, name+'_b2_conv2', args, **kwargs)
+            n3x3 args, **kwargs),
+            get_activation(args.activation, args, **kwargs)
         )
 
         # 1x1 conv -> 5x5 conv branch
         self.b3 = nn.Sequential(
             nn.Conv2d(in_planes, n5x5red, kernel_size=1),
-            CustomNorm2d(n5x5red, args, **kwargs),
-            get_activation(args.activation, name+'_b3_conv1', args, **kwargs),
+            nn.BatchNorm2d(n5x5red),
+            get_activation(args.activation, args, **kwargs)
             nn.Conv2d(n5x5red, n5x5, kernel_size=3, padding=1),
-            CustomNorm2d(n5x5, args, **kwargs),
-            get_activation(args.activation, name+'_b3_conv2', args, **kwargs),
+            nn.BatchNorm2d(n5x5),
+            get_activation(args.activation, args, **kwargs)
             nn.Conv2d(n5x5, n5x5, kernel_size=3, padding=1),
-            CustomNorm2d(n5x5, args, **kwargs),
-            get_activation(args.activation, name+'_b3_conv3', args, **kwargs)
+            nn.BatchNorm2d(n5x5),
+            get_activation(args.activation, args, **kwargs)
         )
 
         # 3x3 pool -> 1x1 conv branch
         self.b4 = nn.Sequential(
             nn.MaxPool2d(3, stride=1, padding=1),
             nn.Conv2d(in_planes, pool_planes, kernel_size=1),
-            CustomNorm2d(pool_planes, args, **kwargs),
-            get_activation(args.activation, name+'_b4_conv1', args, **kwargs)
+            nn.BatchNorm2d(pool_planes),
+            get_activation(args.activation, args, **kwargs)
         )
 
     def forward(self, x):
@@ -61,11 +61,11 @@ class Inception(nn.Module):
 class GoogLeNet(nn.Module):
     def __init__(self, args=None, **kwargs):
         super(GoogLeNet, self).__init__()
-        self.activation = get_activation(args.activation, 'pre_layer', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
         self.pre_layers = nn.Sequential(
             nn.Conv2d(3, 192, kernel_size=3, padding=1),
-            CustomNorm2d(192, args, **kwargs),
+            nn.BatchNorm2d(192),
             self.activation,
         )
 

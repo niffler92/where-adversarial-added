@@ -4,10 +4,9 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from torch.autograd import Variable
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 
 __all__ = ['DenseNet121', 'DenseNet161', 'DenseNet169', 'DenseNet201', 'densenet_cifar']
 
@@ -15,14 +14,13 @@ __all__ = ['DenseNet121', 'DenseNet161', 'DenseNet169', 'DenseNet201', 'densenet
 class Bottleneck(nn.Module):
     def __init__(self, in_planes, growth_rate, ndense, nblock, args=None, **kwargs):
         super(Bottleneck, self).__init__()
-        self.bn1 = CustomNorm2d(in_planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(in_planes)
         self.conv1 = nn.Conv2d(in_planes, 4*growth_rate, kernel_size=1, bias=False)
-        self.bn2 = CustomNorm2d(4*growth_rate, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(4*growth_rate)
         self.conv2 = nn.Conv2d(4*growth_rate, growth_rate, kernel_size=3, padding=1, bias=False)
 
-        name = 'Bottleneck_'+str(ndense)+'_'+str(nblock)+'_'
-        self.activation1 = get_activation(args.activation, name + 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name + 'conv2', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.conv1(self.activation1(self.bn1(x)))
@@ -34,11 +32,9 @@ class Bottleneck(nn.Module):
 class Transition(nn.Module):
     def __init__(self, in_planes, out_planes, ntrans, args=None, **kwargs):
         super(Transition, self).__init__()
-        self.bn = CustomNorm2d(in_planes, args, **kwargs)
+        self.bn = nn.BatchNorm2d(in_planes)
         self.conv = nn.Conv2d(in_planes, out_planes, kernel_size=1, bias=False)
-
-        name = 'Transition_'+str(ntrans)+'_'
-        self.activation = get_activation(args.activation, name+'conv1', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.conv(self.activation(self.bn(x)))
@@ -76,10 +72,10 @@ class DenseNet(nn.Module):
         self.dense4 = self._make_dense_layers(block, num_planes, nblocks[3], 3, args, **kwargs)
         num_planes += nblocks[3]*growth_rate
 
-        self.bn = CustomNorm2d(num_planes, args, **kwargs)
+        self.bn = nn.BatchNorm2d(num_planes)
         self.linear = nn.Linear(num_planes, self.args.num_classes)
 
-        self.activation = get_activation(args.activation, 'out', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
     def _make_dense_layers(self, block, in_planes, nblock, ndense, args, **kwargs):
         layers = []

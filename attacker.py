@@ -8,9 +8,6 @@ from collections import Iterable
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from tensorboardX import SummaryWriter
-import nsml
-import visdom
 
 from settings import PROJECT_ROOT
 from trainer import Trainer

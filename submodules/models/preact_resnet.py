@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 
 __all__ = ['PreActResNet18', 'PreActResNet34', 'PreActResNet50', 'PreActResNet101',
            'PreActResNet152']
@@ -21,9 +21,9 @@ class PreActBlock(nn.Module):
 
     def __init__(self, in_planes, planes, stride=1, nlayer=0, nstride=0, args=None, **kwargs):
         super(PreActBlock, self).__init__()
-        self.bn1 = CustomNorm2d(in_planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(in_planes)
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn2 = CustomNorm2d(planes, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
 
         if stride != 1 or in_planes != self.expansion*planes:
@@ -32,8 +32,8 @@ class PreActBlock(nn.Module):
             )
 
         name = 'Block_' + str(nlayer) + '_' + str(nstride) + '_'
-        self.activation1 = get_activation(args.activation, name+'bn1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name+'conv2', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.activation1(self.bn1(x))
@@ -50,11 +50,11 @@ class PreActBottleneck(nn.Module):
 
     def __init__(self, in_planes, planes, stride=1, nlayer=0, nstride=0, args=None, **kwargs):
         super(PreActBottleneck, self).__init__()
-        self.bn1 = CustomNorm2d(in_planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(in_planes)
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=1, bias=False)
-        self.bn2 = CustomNorm2d(planes, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn3 = CustomNorm2d(planes, args, **kwargs)
+        self.bn3 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, self.expansion*planes, kernel_size=1, bias=False)
 
         if stride != 1 or in_planes != self.expansion*planes:
@@ -63,9 +63,9 @@ class PreActBottleneck(nn.Module):
             )
 
         name = 'Bottleneck_' + str(nlayer) + '_' + str(nstride) + '_'
-        self.activation1 = get_activation(args.activation, name+'bn1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name+'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, name+'conv3', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.activation1(self.bn1(x))

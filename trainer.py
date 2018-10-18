@@ -7,8 +7,6 @@ import inspect
 
 import torch
 import torch.nn as nn
-from tensorboardX import SummaryWriter
-import nsml
 import numpy as np
 from scipy.stats import norm
 
@@ -18,7 +16,6 @@ from common.torch_utils import to_np, get_optimizer, get_model, plot_grad_heatma
 from common.summary import EvaluationMetrics
 from submodules.activation import CustomActivation
 from submodules import attacks
-from common.attack_utils import get_rf
 
 
 class Trainer:
@@ -126,19 +123,6 @@ class Trainer:
             except Exception as e:
                 print("Check if variable {} is not used: {}".format(tag, e))
 
-        if nsml.DATASET_PATH:
-            activation_info = {}
-            for m in self.model.modules():
-                if isinstance(m, CustomActivation):
-                    for name, value in m.info.items():
-                        activation_info['record__train__'+m.name+'__'+name] = value
-            nsml.report(
-                epoch=self.epoch,
-                epoch_total=self.epochs,
-                step=self.step,
-                **activation_info
-            )
-
         self.logger.scalar_summary(eval_metrics.avg, self.step, 'EPOCH')
 
 
@@ -171,26 +155,11 @@ class Trainer:
 
         # Save best model
         if eval_metrics.avg['Acc'] > self.best_acc:
-            if nsml.IS_ON_NSML:
-                nsml.save(self.epoch)
-            else:
-                self.save()
+            self.save()
             self.logger.log("Saving best model: epoch={}".format(self.epoch))
             self.best_acc = eval_metrics.avg['Acc']
             self.maybe_delete_old_pth(log_path=self.log_path.as_posix(), max_to_keep=1)
 
-        if nsml.DATASET_PATH:
-            activation_info = {}
-            for m in self.model.modules():
-                if isinstance(m, CustomActivation):
-                    for name, value in m.info.items():
-                        activation_info['record__val__'+m.name+'__'+name] = value
-            nsml.report(
-                summary=True,
-                epoch=self.epoch,
-                epoch_total=self.epochs,
-                **activation_info
-            )
         self.logger.scalar_summary(eval_metrics.avg, self.step, 'EVAL')
 
     def get_dirname(self, path, args):
@@ -335,19 +304,6 @@ class AdvTrainer(Trainer):
             except Exception as e:
                 print("Check if variable {} is not used: {}".format(tag, e))
 
-        if nsml.DATASET_PATH:
-            activation_info = {}
-            for m in self.model.modules():
-                if isinstance(m, CustomActivation):
-                    for name, value in m.info.items():
-                        activation_info['record__train__'+m.name+'__'+name] = value
-            nsml.report(
-                epoch=self.epoch,
-                epoch_total=self.epochs,
-                step=self.step,
-                **activation_info
-            )
-
         self.logger.scalar_summary(eval_metrics.avg, self.step, 'EPOCH')
 
 
@@ -440,10 +396,7 @@ class AETrainer(Trainer):
 
         # Save best model
         if eval_metrics.avg['Loss'] < self.best_loss:
-            if nsml.IS_ON_NSML:
-                nsml.save(self.epoch)
-            else:
-                self.save()
+            self.save()
             self.logger.log("Saving best model: epoch={}".format(self.epoch))
             self.best_loss = eval_metrics.avg['Loss']
             self.maybe_delete_old_pth(log_path=self.log_path.as_posix(), max_to_keep=1)

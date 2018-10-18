@@ -1,8 +1,7 @@
 from distutils.core import setup
 setup(
-    name='nsml visualization',
+    name='ACE-Defense',
     install_requires =[
-        'visdom',
         'pillow',
         'tensorboardX==1.2',
         'termcolor',

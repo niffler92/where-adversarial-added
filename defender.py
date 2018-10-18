@@ -10,9 +10,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from tensorboardX import SummaryWriter
-import nsml
-import visdom
 
 from settings import PROJECT_ROOT
 from attacker import Attacker

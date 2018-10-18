@@ -23,7 +23,6 @@ from dataloader import get_loader
 from common.utils import find_class_by_name
 from common.logger import Logger
 import settings
-import nsml
 
 
 logger = Logger("common")
@@ -36,84 +35,63 @@ def main(args, scope):
     torch.manual_seed(SEED)
     torch.cuda.manual_seed(SEED)
 
-    train_loader, val_loader  = get_loader(args.dataset,
+    train_loader, val_loader = get_loader(args.dataset,
             batch_size=args.batch_size,
             num_workers=args.workers
     )
-    #model = find_class_by_name(args.model, [nets])(args)
 
-    if args.pause:
-        nsml.paused(scope=scope)
+    if args.resume:
+        #TODO: implement load&save in pytorch
+        pass
 
     if args.mode == 'train':
         logger.log("Training start!")
         if args.adversarial:
             logger.log("Adversarial Training with {}....".format(args.attack))
-            trainer = AdvTrainer(train_loader, val_loader, args)
+            runner = AdvTrainer(train_loader, val_loader, args)
         elif args.autoencoder:
-            trainer = AETrainer(train_loader, val_loader, args)
+            runner = AETrainer(train_loader, val_loader, args)
         else:
-            trainer = Trainer(train_loader, val_loader, args)
-        trainer.show_current_model()
-        save, load, infer = get_binds(trainer)
-        nsml.bind(save=save, load=load, infer=infer)
+            runner = Trainer(train_loader, val_loader, args)
+        runner.show_current_model()
 
-        trainer.train()
+        runner.train()
         logger.log("Training end!")
 
     elif args.mode == 'attack':
         logger.log("Attack start!")
-        trainer = Attacker(val_loader, args)
-        trainer.show_current_model()
-        save, load, infer = get_binds(trainer)
-        nsml.bind(save=save, load=load, infer=infer)
+        runner = Attacker(val_loader, args)
+        runner.show_current_model()
 
-        trainer.attack()
+        runner.attack()
         logger.log("Attack end!")
 
     elif args.mode == 'defense':
         logger.log("Defense start!")
-        trainer = Defender(val_loader, args)
-        trainer.show_current_model()
-        save, load, infer = get_binds(trainer)
-        nsml.bind(save=save, load=load, infer=infer)
+        runner = Defender(val_loader, args)
+        runner.show_current_model()
 
-        trainer.defend()
+        runner.defend()
         logger.log("Defend end!")
 
     elif args.mode == 'analysis':
         logger.log("Analysis start!")
-        trainer = Analysis(val_loader, args)
-        save, load, infer = get_binds(trainer)
-        nsml.bind(save=save, load=load, infer=infer)
+        runner = Analysis(val_loader, args)
 
-        trainer.analysis()
+        runner.analysis()
         logger.log("Analysis end!")
 
-    arg_file = os.path.join(str(trainer.log_path), 'args.json')
+    arg_file = os.path.join(str(runner.log_path), 'args.json')
     with open(arg_file, 'w') as outfile:
         json.dump(vars(args), outfile)
 
-
-def get_binds(trainer):
-    def save(filename=None, *args):
-        trainer.save(filename)
-
-    def load(filename=None, *args):
-        trainer.load(filename)
-
-    def infer(input):
-        # train.infer(input)
-        pass
-
-    return save, load, infer
 
 if __name__ == '__main__':
     model_names = sorted(name for name in dir(models))
     attack_names = sorted(name for name in dir(attacks))
     defense_names = sorted(name for name in dir(defenses))
 
-    parser = argparse.ArgumentParser(description='Image classification')
+    parser = argparse.ArgumentParser(description='ACE-Defense')
 
     # Datasets
     parser.add_argument('--dataset', default='CIFAR10', type=str,
@@ -164,19 +142,8 @@ if __name__ == '__main__':
     parser.add_argument("--seed", default=500, type=int)
     parser.add_argument("--multigpu", default=0, type=int,
                         help="Number of gpus to use. Batchsize // ngpu = 0")
-    parser.add_argument("--record", dest='record', action='store_true')
     parser.add_argument("--no_cuda", action='store_true', help="For CPU inference")
     parser.add_argument("--ckpt_name", type=str)
-
-    # Adaptive ReLU settings
-    parser.add_argument("--lam", default=1, type=float,
-                        help="constant for the Rademacher complexity constraint")
-    parser.add_argument("--schedule_id", default=1, type=int,
-                        help="Adaptive update schedule scheme, look trainer.py for now")
-    parser.add_argument("--no_affine", action='store_true', help="Deactivate affine BN transformation")
-    parser.add_argument("--no_bn", action='store_true', help="Deactivate BN transformation")
-    parser.add_argument("--normalization", default="batch", type=str,
-                        help="type of normalization layer")
 
     # Adversarial attack settings
     parser.add_argument('--attack', metavar='ATTACK', default=None, choices=attack_names,
@@ -195,14 +162,9 @@ if __name__ == '__main__':
     # JSMA
     parser.add_argument("--top_overlap", default=0, type=int, help="Overlap search domain to select")
     parser.add_argument("--gamma", default=0.1, type=float, help="% of pixels to use in image")
+
     # DeepFool
     parser.add_argument("--max_iter", default=50, type=int, help="Max iteration to perturb")
-
-    # nsml setting
-    parser.add_argument("--mode", default='train', type=str,
-                        choices=['train', 'attack', 'defense', 'analysis'])
-    parser.add_argument("--pause", type=int, default=0)
-    parser.add_argument("--iteration", type=str, default='0')
 
     # Log options
     parser.add_argument("--verbose", default=1, type=int,
@@ -278,9 +240,4 @@ if __name__ == '__main__':
     if args.T is not None:
         args.domain_restrict = True
 
-    #import multiprocessing
-    #print(multiprocessing.cpu_count())
-    #import psutil
-    #print(psutil.cpu_percent())
-    #print(psutil.virtual_memory())
     main(args, scope=locals())

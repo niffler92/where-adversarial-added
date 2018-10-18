@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 
 __all__ = ['DPN26', 'DPN92']
 
@@ -16,23 +16,22 @@ class Bottleneck(nn.Module):
         self.dense_depth = dense_depth
 
         self.conv1 = nn.Conv2d(last_planes, in_planes, kernel_size=1, bias=False)
-        self.bn1 = CustomNorm2d(in_planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(in_planes)
         self.conv2 = nn.Conv2d(in_planes, in_planes, kernel_size=3, stride=stride, padding=1, groups=32, bias=False)
-        self.bn2 = CustomNorm2d(in_planes, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(in_planes)
         self.conv3 = nn.Conv2d(in_planes, out_planes+dense_depth, kernel_size=1, bias=False)
-        self.bn3 = CustomNorm2d(out_planes+dense_depth, args, **kwargs)
+        self.bn3 = nn.BatchNorm2d(out_planes+dense_depth)
 
         self.shortcut = nn.Sequential()
         if first_layer:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(last_planes, out_planes+dense_depth, kernel_size=1, stride=stride, bias=False),
-                CustomNorm2d(out_planes+dense_depth, args, **kwargs)
+                nn.BatchNorm2d(out_planes+dense_depth)
             )
 
-        name = 'Bottleneck_'+str(nlayer)+'_'+str(nbottle)+'_'
-        self.activation1 = get_activation(args.activation, name + 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name + 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, name + 'out', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.activation1(self.bn1(self.conv1(x)))
@@ -52,7 +51,7 @@ class DPN(nn.Module):
         num_blocks, dense_depth = cfg['num_blocks'], cfg['dense_depth']
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = CustomNorm2d(64, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(64)
         self.last_planes = 64
         self.layer1 = self._make_layer(in_planes[0], out_planes[0], num_blocks[0], dense_depth[0], stride=1, nlayer=0, args=args, **kwargs)
         self.layer2 = self._make_layer(in_planes[1], out_planes[1], num_blocks[1], dense_depth[1], stride=2, nlayer=1, args=args, **kwargs)
@@ -60,7 +59,7 @@ class DPN(nn.Module):
         self.layer4 = self._make_layer(in_planes[3], out_planes[3], num_blocks[3], dense_depth[3], stride=2, nlayer=3, args=args, **kwargs)
         self.linear = nn.Linear(out_planes[3]+(num_blocks[3]+1)*dense_depth[3], args.num_classes)
 
-        self.activation = get_activation(args.activation, 'conv1', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
     def _make_layer(self, in_planes, out_planes, num_blocks, dense_depth, stride, nlayer, args, **kwargs):
         strides = [stride] + [1]*(num_blocks-1)

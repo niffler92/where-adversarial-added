@@ -8,7 +8,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-import nsml
 
 from common.utils import get_checkpoint
 from settings import PROJECT_ROOT
@@ -33,6 +32,25 @@ def adjust_learning_rate(lr, optimizer, epoch):
     lr = lr * (0.5 ** (epoch // 30))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+
+
+def get_activation(fn, args=None, **kwargs):
+    fn = fn.lower()
+
+    if fn == "sigmoid":
+        return nn.Sigmoid()
+    elif fn == "relu":
+        return nn.ReLU()
+    elif fn == "relu6":
+        return nn.ReLU6()
+    elif fn == "selu":
+        return nn.SELU()
+    elif fn == "elu":
+        return nn.ELU()
+    elif fn == "leakyrelu":
+        return nn.LeakyReLU()
+    else:
+        raise ValueError("Invalid activation name")
 
 
 def get_optimizer(optimizer, params, args):
@@ -156,13 +174,8 @@ def init_params(model, args=None):
 
 
 def plot_grad_heatmap(model, args, logger, epoch):
-    """requires NSML and uses visdom
-    model must have gradient hook in order to get gradients
+    """model must have gradient hook in order to get gradients
     """
-    if not nsml.IS_ON_NSML:
-        logger.log("Not on NSML. No heatmap will be generated", 'WARNING')
-        return
-
     if not hasattr(model, "save_grad"):
         logger.log("No gradient hook on model. No heatmap will be generated", 'WARNING')
         return

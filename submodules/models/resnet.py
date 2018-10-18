@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torch.nn import Sequential
 from torch.autograd import Variable
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 from submodules.spectralnorm import SpectralNorm
 
 
@@ -38,9 +38,9 @@ class BasicBlock(nn.Module):
             padding = 1
 
         self.conv1 = SpectralNorm(nn.Conv2d(in_planes, planes, kernel_size=ks, stride=stride, padding=padding, bias=False), args.sn)
-        self.bn1 = CustomNorm2d(planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = SpectralNorm(nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False), args.sn)
-        self.bn2 = CustomNorm2d(planes, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(planes)
 
         self.shortcut = Sequential()
         if stride != 1 or in_planes != self.expansion*planes:
@@ -48,12 +48,12 @@ class BasicBlock(nn.Module):
             self.shortcut = Sequential(
                 SpectralNorm(nn.Conv2d(in_planes, self.expansion*planes, kernel_size=shortcut_ks, stride=stride, bias=False), args.sn),
                 #SpectralNorm(nn.Conv2d(in_planes, self.expansion*planes, kernel_size=2, stride=stride, bias=False), args.sn),
-                CustomNorm2d(self.expansion*planes, args, **kwargs)
+                nn.BatchNorm2d(self.expansion*planes)
             )
 
         name = 'Block_' + str(nlayer) + '_' + str(nstride) + '_'
-        self.activation1 = get_activation(args.activation, name+'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name+'out', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.activation1(self.bn1(self.conv1(x)))
@@ -79,23 +79,23 @@ class Bottleneck(nn.Module):
             padding = 1
 
         self.conv1 = SpectralNorm(nn.Conv2d(in_planes, planes, kernel_size=1, bias=False), args.sn)
-        self.bn1 = CustomNorm2d(planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = SpectralNorm(nn.Conv2d(planes, planes, kernel_size=ks, stride=stride, padding=padding, bias=False), args.sn)
-        self.bn2 = CustomNorm2d(planes, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = SpectralNorm(nn.Conv2d(planes, self.expansion*planes, kernel_size=1, bias=False), args.sn)
-        self.bn3 = CustomNorm2d(self.expansion*planes, args, **kwargs)
+        self.bn3 = nn.BatchNorm2d(self.expansion*planes)
 
         self.shortcut = Sequential()
         if stride != 1 or in_planes != self.expansion*planes:
             self.shortcut = Sequential(
                 SpectralNorm(nn.Conv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=False), args.sn),
-                CustomNorm2d(self.expansion*planes, args, **kwargs)
+                nn.BatchNorm2d(self.expansion*planes)
             )
 
         name = 'Bottleneck_' + str(nlayer) + '_' + str(nstride) + '_'
-        self.activation1 = get_activation(args.activation, name+'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name+'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, name+'out', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.activation1(self.bn1(self.conv1(x)))
@@ -120,14 +120,14 @@ class ResNet(nn.Module):
             raise NotImplementedError
 
         self.conv1 = SpectralNorm(nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False), args.sn)
-        self.bn1 = CustomNorm2d(64, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1, nlayer=0, args=args, **kwargs)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, nlayer=1, args=args, **kwargs)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2, nlayer=2, args=args, **kwargs)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2, nlayer=3, args=args, **kwargs)
         self.linear = nn.Linear(linear_in*block.expansion, args.num_classes)
 
-        self.activation = get_activation(args.activation, 'conv1', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
     def _make_layer(self, block, planes, num_blocks, stride, nlayer, args, **kwargs):
         strides = [stride] + [1]*(num_blocks-1)
@@ -163,14 +163,14 @@ class ResNet_g(nn.Module):
             raise NotImplementedError
 
         self.conv1 = SpectralNorm(nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False), args.sn)
-        self.bn1 = CustomNorm2d(64, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1, nlayer=0, args=args, **kwargs)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, nlayer=1, args=args, **kwargs)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2, nlayer=2, args=args, **kwargs)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2, nlayer=3, args=args, **kwargs)
         self.linear = nn.Linear(linear_in*block.expansion, args.num_classes)
 
-        self.activation = get_activation(args.activation, 'conv1', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
         self.grads = {}
         self.get_grad = False
@@ -224,64 +224,64 @@ class ResNet_hook(nn.Module):
     def __init__(self, block, num_blocks, args=None, **kwargs):
         super(ResNet_hook, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = CustomNorm2d(64, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(64)
         self.activation = nn.ReLU()
 
         # Layer 1
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn2 = CustomNorm2d(64, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(64)
         self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn3 = CustomNorm2d(64, args, **kwargs)
+        self.bn3 = nn.BatchNorm2d(64)
 
         self.conv4 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn4 = CustomNorm2d(64, args, **kwargs)
+        self.bn4 = nn.BatchNorm2d(64)
         self.conv5 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn5 = CustomNorm2d(64, args, **kwargs)
+        self.bn5 = nn.BatchNorm2d(64)
 
         # Layer 2
         self.conv6 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=False)
-        self.bn6 = CustomNorm2d(128, args, **kwargs)
+        self.bn6 = nn.BatchNorm2d(128)
         self.conv7 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn7 = CustomNorm2d(128, args, **kwargs)
+        self.bn7 = nn.BatchNorm2d(128)
         self.shortcut1 = nn.Sequential(
                 nn.Conv2d(64, 128, kernel_size=1, stride=2, bias=False),
-                CustomNorm2d(128, args, **kwargs)
+                nn.BatchNorm2d(128)
                 )
 
         self.conv8 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn8 = CustomNorm2d(128, args, **kwargs)
+        self.bn8 = nn.BatchNorm2d(128)
         self.conv9 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn9 = CustomNorm2d(128, args, **kwargs)
+        self.bn9 = nn.BatchNorm2d(128)
 
         # Layer 3
         self.conv10 = nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=False)
-        self.bn10 = CustomNorm2d(256, args, **kwargs)
+        self.bn10 = nn.BatchNorm2d(256)
         self.conv11 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn11 = CustomNorm2d(256, args, **kwargs)
+        self.bn11 = nn.BatchNorm2d(256)
         self.shortcut2 = nn.Sequential(
                 nn.Conv2d(128, 256, kernel_size=1, stride=2, bias=False),
-                CustomNorm2d(256, args, **kwargs)
+                nn.BatchNorm2d(256)
                 )
 
         self.conv12 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn12 = CustomNorm2d(256, args, **kwargs)
+        self.bn12 = nn.BatchNorm2d(256)
         self.conv13 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn13 = CustomNorm2d(256, args, **kwargs)
+        self.bn13 = nn.BatchNorm2d(256)
 
         # Layer 4
         self.conv14 = nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=False)
-        self.bn14 = CustomNorm2d(512, args, **kwargs)
+        self.bn14 = nn.BatchNorm2d(512)
         self.conv15 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn15 = CustomNorm2d(512, args, **kwargs)
+        self.bn15 = nn.BatchNorm2d(512)
         self.shortcut3 = nn.Sequential(
                 nn.Conv2d(256, 512, kernel_size=1, stride=2, bias=False),
-                CustomNorm2d(512, args, **kwargs)
+                nn.BatchNorm2d(512)
                 )
 
         self.conv16 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn16 = CustomNorm2d(512, args, **kwargs)
+        self.bn16 = nn.BatchNorm2d(512)
         self.conv17 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn17 = CustomNorm2d(512, args, **kwargs)
+        self.bn17 = nn.BatchNorm2d(512)
 
         self.linear = nn.Linear(512, args.num_classes)
 

@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 
 __all__ = ['ResNeXt29_2x64d', 'ResNeXt29_4x64d', 'ResNeXt29_8x64d', 'ResNeXt29_32x4d']
 
@@ -20,23 +20,23 @@ class Block(nn.Module):
         super(Block, self).__init__()
         group_width = cardinality * bottleneck_width
         self.conv1 = nn.Conv2d(in_planes, group_width, kernel_size=1, bias=False)
-        self.bn1 = CustomNorm2d(group_width, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(group_width)
         self.conv2 = nn.Conv2d(group_width, group_width, kernel_size=3, stride=stride, padding=1, groups=cardinality, bias=False)
-        self.bn2 = CustomNorm2d(group_width, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(group_width)
         self.conv3 = nn.Conv2d(group_width, self.expansion*group_width, kernel_size=1, bias=False)
-        self.bn3 = CustomNorm2d(self.expansion*group_width, args, **kwargs)
+        self.bn3 = nn.BatchNorm2d(self.expansion*group_width)
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != self.expansion*group_width:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_planes, self.expansion*group_width, kernel_size=1, stride=stride, bias=False),
-                CustomNorm2d(self.expansion*group_width, args, **kwargs)
+                nn.BatchNorm2d(self.expansion*group_width)
             )
 
         name = 'Block_' + str(nlayer) + '_' + str(nstride) + '_'
-        self.activation1 = get_activation(args.activation, name+'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name+'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, name+'out', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.activation1(self.bn1(self.conv1(x)))
@@ -52,14 +52,14 @@ class ResNeXt(nn.Module):
         super(ResNeXt, self).__init__()
         self.args = args
         self.kwargs = kwargs
-        self.activation = get_activation(args.activation, 'conv1', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
         self.cardinality = cardinality
         self.bottleneck_width = bottleneck_width
         self.in_planes = 64
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=1, bias=False)
-        self.bn1 = CustomNorm2d(64, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(num_blocks[0], 1, 0)
         self.layer2 = self._make_layer(num_blocks[1], 2, 1)
         self.layer3 = self._make_layer(num_blocks[2], 2, 2)

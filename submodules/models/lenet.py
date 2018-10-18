@@ -2,8 +2,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from submodules.activation import get_activation, CustomNorm2d
-from common.torch_utils import to_np
+from common.torch_utils import to_np, get_activation
 
 import os
 
@@ -16,18 +15,18 @@ class LeNet_conv32(nn.Module):
     def __init__(self, args, **kwargs):
         super(LeNet_conv32, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, 3, stride=2)
-        self.bn1   = CustomNorm2d(16, args, **kwargs)
+        self.bn1   = nn.BatchNorm2d(16)
         self.conv2 = nn.Conv2d(16, 32, 3, stride=2)
-        self.bn2   = CustomNorm2d(32, args, **kwargs)
+        self.bn2   = nn.BatchNorm2d(32)
         self.conv3   = nn.Conv2d(32, 64, 3, stride=1)
-        self.bn3   = CustomNorm2d(64, args, **kwargs)
+        self.bn3   = nn.BatchNorm2d(64)
         self.fc1   = nn.Linear(1600, 512)
         self.fc2   = nn.Linear(512, args.num_classes)
 
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'conv3', args, **kwargs)
-        self.activation4 = get_activation(args.activation, 'fc1', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation4 = get_activation(args.activation, args, **kwargs)
 
         self.grads = {}
         self.get_grad = False
@@ -82,10 +81,10 @@ class LeNet_conv32_nobn(nn.Module):
         self.fc1   = nn.Linear(linear_in, 512)
         self.fc2   = nn.Linear(512, args.num_classes)
 
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'conv3', args, **kwargs)
-        self.activation4 = get_activation(args.activation, 'fc1', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation4 = get_activation(args.activation, args, **kwargs)
 
         self.grads = {}
         self.get_grad = False
@@ -130,10 +129,10 @@ class LeNet_conv32_nobn_maxp(nn.Module):
         self.fc1   = nn.Linear(64*4*4, 512)
         self.fc2   = nn.Linear(512, args.num_classes)
 
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'conv3', args, **kwargs)
-        self.activation4 = get_activation(args.activation, 'fc1', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation4 = get_activation(args.activation, args, **kwargs)
 
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
 
@@ -180,10 +179,10 @@ class LeNet_conv32_nobn_maxp32(nn.Module):
         self.fc1   = nn.Linear(64*3*3, 512)
         self.fc2   = nn.Linear(512, args.num_classes)
 
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'conv3', args, **kwargs)
-        self.activation4 = get_activation(args.activation, 'fc1', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation4 = get_activation(args.activation, args, **kwargs)
 
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2)
 
@@ -231,10 +230,10 @@ class LeNet_conv32_nobn_avgp(nn.Module):
         #self.fc1   = nn.Linear(64*3*3, 512)  # For pool 3x3 stride2
         self.fc2   = nn.Linear(512, args.num_classes)
 
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'conv3', args, **kwargs)
-        self.activation4 = get_activation(args.activation, 'fc1', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation4 = get_activation(args.activation, args, **kwargs)
 
         self.avgpool = nn.AvgPool2d(kernel_size=2, stride=2)
 
@@ -280,10 +279,10 @@ class LeNet_conv32_nobn_avgp32(nn.Module):
         self.fc1   = nn.Linear(64*3*3, 512)
         self.fc2   = nn.Linear(512, args.num_classes)
 
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'conv3', args, **kwargs)
-        self.activation4 = get_activation(args.activation, 'fc1', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation4 = get_activation(args.activation, args, **kwargs)
 
         self.avgpool = nn.AvgPool2d(kernel_size=3, stride=2)
 
@@ -329,10 +328,10 @@ class LeNet_conv75_nobn(nn.Module):
         self.fc1   = nn.Linear(256, 512)
         self.fc2   = nn.Linear(512, args.num_classes)
 
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'conv3', args, **kwargs)
-        self.activation4 = get_activation(args.activation, 'fc1', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation4 = get_activation(args.activation, args, **kwargs)
 
         self.grads = {}
         self.get_grad = False
@@ -373,9 +372,9 @@ class LeNet(nn.Module):
         super(LeNet, self).__init__()
         #self.conv1 = nn.Conv2d(1, 6, 5)  # For mnist
         self.conv1 = nn.Conv2d(3, 6, 5)
-        self.bn1   = CustomNorm2d(6, args, **kwargs)
+        self.bn1   = nn.BatchNorm2d(6)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.bn2   = CustomNorm2d(16, args, **kwargs)
+        self.bn2   = nn.BatchNorm2d(16)
 
         if args.dataset in ["CIFAR10", "CIFAR100"]:
             linear_in = 400
@@ -387,15 +386,15 @@ class LeNet(nn.Module):
             raise NotImplementedError
 
         self.fc1   = nn.Linear(linear_in, 120)
-        self.bn3   = CustomNorm2d(120, args, **kwargs)
+        self.bn3   = nn.BatchNorm2d(120)
         self.fc2   = nn.Linear(120, 84)
-        self.bn4   = CustomNorm2d(84, args, **kwargs)
+        self.bn4   = nn.BatchNorm2d(84)
         self.fc3   = nn.Linear(84, args.num_classes)
 
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'fc1', args, **kwargs)
-        self.activation4 = get_activation(args.activation, 'fc2', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation4 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.activation1(self.bn1(self.conv1(x)))
@@ -413,19 +412,19 @@ class LeNet_layerwise(nn.Module):
     def __init__(self, args, **kwargs):
         super(LeNet_layerwise, self).__init__()
         self.conv1 = nn.Conv2d(3, 6, 5)
-        self.bn1   = CustomNorm2d(6, args, **kwargs)
+        self.bn1   = nn.BatchNorm2d(6)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.bn2   = CustomNorm2d(16, args, **kwargs)
+        self.bn2   = nn.BatchNorm2d(16)
         self.fc1   = nn.Linear(16*5*5, 120)
-        self.bn3   = CustomNorm2d(120, args, **kwargs)
+        self.bn3   = nn.BatchNorm2d(120)
         self.fc2   = nn.Linear(120, 84)
-        self.bn4   = CustomNorm2d(84, args, **kwargs)
+        self.bn4   = nn.BatchNorm2d(84)
         self.fc3   = nn.Linear(84, args.num_classes)
 
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'fc1', args, **kwargs)
-        self.activation4 = get_activation(args.activation, 'fc2', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation4 = get_activation(args.activation, args, **kwargs)
 
         self.fc_out1 = nn.Linear(6*28*28, args.num_classes)
         self.fc_out2 = nn.Linear(16*10*10, args.num_classes)
@@ -457,10 +456,10 @@ class LeNet_conv42_nobn(nn.Module):
         self.fc1   = nn.Linear(64*2*2, 512)
         self.fc2   = nn.Linear(512, args.num_classes)
 
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'conv3', args, **kwargs)
-        self.activation4 = get_activation(args.activation, 'fc1', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation4 = get_activation(args.activation, args, **kwargs)
 
         self.grads = {}
         self.get_grad = False
@@ -505,10 +504,10 @@ class LeNet_conv22_nobn(nn.Module):
         self.fc1   = nn.Linear(64*4*4, 512)
         self.fc2   = nn.Linear(512, args.num_classes)
 
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, 'conv3', args, **kwargs)
-        self.activation4 = get_activation(args.activation, 'fc1', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation4 = get_activation(args.activation, args, **kwargs)
 
         self.grads = {}
         self.get_grad = False

@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 
 __all__ = ['MobileNet']
 
@@ -18,13 +18,13 @@ class Block(nn.Module):
     def __init__(self, in_planes, out_planes, stride=1, nlayer=None, args=None, **kwargs):
         super(Block, self).__init__()
         self.conv1 = nn.Conv2d(in_planes, in_planes, kernel_size=3, stride=stride, padding=1, groups=in_planes, bias=False)
-        self.bn1 = CustomNorm2d(in_planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(in_planes)
         self.conv2 = nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn2 = CustomNorm2d(out_planes, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(out_planes)
 
         name = 'Block_' + str(nlayer) + '_'
-        self.activation1 = get_activation(args.activation, name+'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name+'conv2', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.activation1(self.bn1(self.conv1(x)))
@@ -39,11 +39,11 @@ class MobileNet(nn.Module):
     def __init__(self, args=None, **kwargs):
         super(MobileNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = CustomNorm2d(32, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(32)
         self.layers = self._make_layers(in_planes=32, args=args, **kwargs)
         self.linear = nn.Linear(1024, args.num_classes)
 
-        self.activation = get_activation(args.activation, 'conv1', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
     def _make_layers(self, in_planes, args, **kwargs):
         layers = []

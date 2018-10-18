@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 
 __all__ = ['ShuffleNetG2', 'ShuffleNetG3']
 
@@ -32,21 +32,21 @@ class Bottleneck(nn.Module):
         mid_planes = int(out_planes/4)
         g = 1 if in_planes == 24 else groups
         self.conv1 = nn.Conv2d(in_planes, mid_planes, kernel_size=1, groups=g, bias=False)
-        self.bn1 = CustomNorm2d(mid_planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(mid_planes)
         self.shuffle1 = ShuffleBlock(groups=g)
         self.conv2 = nn.Conv2d(mid_planes, mid_planes, kernel_size=3, stride=stride, padding=1, groups=mid_planes, bias=False)
-        self.bn2 = CustomNorm2d(mid_planes, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(mid_planes)
         self.conv3 = nn.Conv2d(mid_planes, out_planes, kernel_size=1, groups=groups, bias=False)
-        self.bn3 = CustomNorm2d(out_planes, args, **kwargs)
+        self.bn3 = nn.BatchNorm2d(out_planes)
 
         self.shortcut = nn.Sequential()
         if stride == 2:
             self.shortcut = nn.Sequential(nn.AvgPool2d(3, stride=2, padding=1))
 
         name = 'Bottleneck_' + str(nlayer) + '_' + str(nblock) + '_'
-        self.activation1 = get_activation(args.activation, name+'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name+'conv2', args, **kwargs)
-        self.activation3 = get_activation(args.activation, name+'out', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation3 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.activation1(self.bn1(self.conv1(x)))
@@ -63,14 +63,14 @@ class ShuffleNet(nn.Module):
         super(ShuffleNet, self).__init__()
         self.args = args
         self.kwargs = kwargs
-        self.activation = get_activation(args.activation, 'conv1', args, **kwargs)
+        self.activation = get_activation(args.activation, args, **kwargs)
 
         out_planes = cfg['out_planes']
         num_blocks = cfg['num_blocks']
         groups = cfg['groups']
 
         self.conv1 = nn.Conv2d(3, 24, kernel_size=1, bias=False)
-        self.bn1 = CustomNorm2d(24, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(24)
         self.in_planes = 24
         self.layer1 = self._make_layer(out_planes[0], num_blocks[0], groups, nlayer=0)
         self.layer2 = self._make_layer(out_planes[1], num_blocks[1], groups, nlayer=1)

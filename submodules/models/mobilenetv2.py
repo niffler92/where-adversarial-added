@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 
 __all__ = ['MobileNetV2']
 
@@ -21,22 +21,22 @@ class Block(nn.Module):
 
         planes = expansion * in_planes
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn1 = CustomNorm2d(planes, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, groups=planes, bias=False)
-        self.bn2 = CustomNorm2d(planes, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, out_planes, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn3 = CustomNorm2d(out_planes, args, **kwargs)
+        self.bn3 = nn.BatchNorm2d(out_planes)
 
         self.shortcut = nn.Sequential()
         if stride == 1 and in_planes != out_planes:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=1, padding=0, bias=False),
-                CustomNorm2d(out_planes, args, **kwargs),
+                nn.BatchNorm2d(out_planes)
             )
 
         name = 'Block_' + str(nblock) + '_' + str(nstride) + '_'
-        self.activation1 = get_activation(args.activation, name+'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, name+'conv2', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
 
     def forward(self, x):
         out = self.activation1(self.bn1(self.conv1(x)))
@@ -59,16 +59,16 @@ class MobileNetV2(nn.Module):
     def __init__(self, args, **kwargs):
         super(MobileNetV2, self).__init__()
         self.args = args
-        self.activation1 = get_activation(args.activation, 'conv1', args, **kwargs)
-        self.activation2 = get_activation(args.activation, 'conv2', args, **kwargs)
+        self.activation1 = get_activation(args.activation, args, **kwargs)
+        self.activation2 = get_activation(args.activation, args, **kwargs)
         self.kwargs = kwargs
 
         # NOTE: change conv1 stride 2 -> 1 for CIFAR10
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = CustomNorm2d(32, args, **kwargs)
+        self.bn1 = nn.BatchNorm2d(32)
         self.layers = self._make_layers(in_planes=32)
         self.conv2 = nn.Conv2d(320, 1280, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn2 = CustomNorm2d(1280, args, **kwargs)
+        self.bn2 = nn.BatchNorm2d(1280)
         self.linear = nn.Linear(1280, args.num_classes)
 
 

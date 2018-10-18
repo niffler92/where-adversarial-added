@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.nn import Sequential
 import torch.nn.init as init
 
-from submodules.activation import get_activation, CustomNorm2d
+from common.torch_utils import get_activation
 
 __all__ = ['Vgg11', 'Vgg13', 'Vgg16', 'Vgg19']
 
@@ -35,10 +35,10 @@ class VGG(nn.Module):
         self.classifier = Sequential(
             nn.Dropout(args.dropout),
             nn.Linear(linear_in, 512),
-            get_activation(self.activation, 'fc1', args, **kwargs),
+            get_activation(self.activation, args, **kwargs)
             nn.Dropout(args.dropout),
             nn.Linear(512, 512),
-            get_activation(self.activation, 'fc2', args, **kwargs),
+            get_activation(self.activation, args, **kwargs)
             nn.Linear(512, args.num_classes),
         )
 
@@ -56,8 +56,8 @@ class VGG(nn.Module):
                 layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             else:
                 conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
-                layers += [conv2d, CustomNorm2d(v, self.args, **self.kwargs),
-                           get_activation(self.activation, str(i)+'_'+'conv1', self.args, **self.kwargs)]
+                layers += [conv2d, nn.BatchNorm2d(v)
+                           get_activation(self.activation, args, **kwargs)
                 in_channels = v
         return Sequential(*layers)
 

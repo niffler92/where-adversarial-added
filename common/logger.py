@@ -4,8 +4,6 @@ from pathlib import Path
 import os
 from datetime import datetime
 
-import nsml
-import visdom
 from tensorboardX import SummaryWriter
 from termcolor import colored
 import torch
@@ -42,7 +40,6 @@ class Logger:
 
         self.log_dir = log_dir
         self.logger = logger
-        self.n_logger = NLogger()
         self.t_logger = TLogger(log_dir)
         self.writer = self.t_logger.writer
 
@@ -73,11 +70,10 @@ class Logger:
         msg = msg[:-2]
 
         self.log(msg, lvl)
-        self.n_logger.scalar_summary(info, step)
         self.t_logger.scalar_summary(info, step)
 
     def image_summary(self, info, step, save=True):
-        """Plot images to NSML and Tensorboard.
+        """Plot images to Tensorboard.
            The images are assumed to be of shape (C, W, H),
            with RGB values in range [0,1].
         """
@@ -104,7 +100,6 @@ class Logger:
                     img = Image.fromarray(img, 'RGBA')
                 img.save(self.log_dir + '/image/' + k + '.png')
 
-        self.n_logger.image_summary(info, step)
         self.t_logger.image_summary(info, step)
 
     def histo_summary(self, info, step):
@@ -120,9 +115,7 @@ class Logger:
                     info[k] = img
                 except:
                     raise TypeError("image must be an array-like instance")
-        self.n_logger.heatmap_summary(info, step)
 
-        # FIXME NSML can't import seaborn... even with setup.py
         if save:
             self.check_savedir()
             for k, v in info.items():
@@ -148,42 +141,6 @@ class Logger:
         color = LOG_LEVELS[level]['color']
 
         return level_num, color
-
-
-class NLogger:
-    def __init__(self):
-        if nsml.IS_ON_NSML:
-            self.viz = nsml.Visdom(visdom=visdom, use_incoming_socket=False)
-
-    def scalar_summary(self, info, step):
-        if nsml.IS_ON_NSML:
-            nsml.report(step=step, **info)
-
-    def image_summary(self, info, step):
-        if nsml.IS_ON_NSML:
-            for k, v in info.items():
-                self.viz.image(v, opts=dict(title='{}/{}'.format(k, step),
-                                            caption='{}/{}'.format(k, step)))
-
-    def histo_summary(self, info, step):
-        raise NotImplementedError
-
-    def heatmap_summary(self, info, step):
-        if nsml.IS_ON_NSML:
-            for k, v in info.items():
-                if isinstance(v, torch.Tensor) or isinstance(v, torch.cuda.FloatTensor):  # XXX Hmm didn't have this error before
-                    v = v.cpu().numpy()
-
-                self.viz.heatmap(v, opts=dict(title='{}/{}'.format(k, step),
-                                              caption='{}/{}'.format(k, step),
-                                              rownames=list(range(v.shape[0])),
-                                              columnnames=list(range(v.shape[1])),
-                                              colormap='Electric'))
-                #self.viz.heatmap(v, opts=dict(title='{}/{}'.format(k, step),
-                #                              caption='{}/{}'.format(k, step),
-                #                              rownames=list(range(v.size(0))),
-                #                              columnnames=list(range(v.size(1))),
-                #                              colormap='Electric'))
 
 
 class TLogger:

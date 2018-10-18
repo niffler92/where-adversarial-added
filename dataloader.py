@@ -3,7 +3,6 @@ import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.autograd import Variable
-from nsml import HAS_DATASET, DATASET_PATH
 
 
 def data_stats(dataset):
@@ -69,9 +68,9 @@ def get_loader(
         ):
 
     assert dataset in ['CIFAR10', 'CIFAR100', 'MNIST', 'ImageNet', 'TinyImageNet'], "Unknown dataset"
-    if DATASET_PATH:
-        assert HAS_DATASET, "Can't find dataset in nsml. Push or search the dataset"
-        root = os.path.join(DATASET_PATH, 'train')
+    #if DATASET_PATH:
+    #    assert HAS_DATASET, "Can't find dataset in nsml. Push or search the dataset"
+    #    root = os.path.join(DATASET_PATH, 'train')
 
     train_loader, val_loader = (torch.utils.data.DataLoader(
         globals()[dataset](root=root, train=is_training).preprocess(),
