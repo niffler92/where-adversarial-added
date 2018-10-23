@@ -12,12 +12,7 @@ import torch.nn.functional as F
 from torch.nn import Sequential
 from torch.autograd import Variable
 
-from common.torch_utils import get_activation
-
-
 __all__ = ['ResNet18', 'ResNet34', 'ResNet50', 'ResNet101', 'ResNet152']
-__all__ += ['ResNet18_g', 'ResNet34_g', 'ResNet50_g', 'ResNet101_g', 'ResNet152_g']
-__all__ += ['ResNet18_2x2', 'ResNet18_4x4', 'ResNet101_2x2', 'ResNet101_4x4']
 __all__ += ['ResNet18_hook']
 
 
@@ -50,8 +45,8 @@ class BasicBlock(nn.Module):
             )
 
         name = 'Block_' + str(nlayer) + '_' + str(nstride) + '_'
-        self.activation1 = get_activation(args.activation, args, **kwargs)
-        self.activation2 = get_activation(args.activation, args, **kwargs)
+        self.activation1 = nn.ReLU()
+        self.activation2 = nn.ReLU()
 
     def forward(self, x):
         out = self.activation1(self.bn1(self.conv1(x)))
@@ -91,9 +86,9 @@ class Bottleneck(nn.Module):
             )
 
         name = 'Bottleneck_' + str(nlayer) + '_' + str(nstride) + '_'
-        self.activation1 = get_activation(args.activation, args, **kwargs)
-        self.activation2 = get_activation(args.activation, args, **kwargs)
-        self.activation3 = get_activation(args.activation, args, **kwargs)
+        self.activation1 = nn.ReLU()
+        self.activation2 = nn.ReLU()
+        self.activation3 = nn.ReLU()
 
     def forward(self, x):
         out = self.activation1(self.bn1(self.conv1(x)))
@@ -108,16 +103,21 @@ class ResNet(nn.Module):
     def __init__(self, block, num_blocks, args=None, **kwargs):
         super(ResNet, self).__init__()
         self.in_planes = 64
-        if args.dataset in ["CIFAR10", "CIFAR100"]:
+        if args.dataset == "MNIST":
+            conv_in = 1
             linear_in = 512
-        elif args.dataset == "TinyImageNet":
-            linear_in = 512*2*2
-        elif args.dataset == "ImageNet":
-            linear_in = 512*7*7
         else:
-            raise NotImplementedError
+            conv_in = 3
+            if args.dataset in ["CIFAR10", "CIFAR100"]:
+                linear_in = 512
+            elif args.dataset == "TinyImageNet":
+                linear_in = 512*2*2
+            elif args.dataset == "ImageNet":
+                linear_in = 512*7*7
+            else:
+                raise NotImplementedError
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(conv_in, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1, nlayer=0, args=args, **kwargs)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, nlayer=1, args=args, **kwargs)
@@ -125,50 +125,7 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2, nlayer=3, args=args, **kwargs)
         self.linear = nn.Linear(linear_in*block.expansion, args.num_classes)
 
-        self.activation = get_activation(args.activation, args, **kwargs)
-
-    def _make_layer(self, block, planes, num_blocks, stride, nlayer, args, **kwargs):
-        strides = [stride] + [1]*(num_blocks-1)
-        layers = []
-        for i, stride in enumerate(strides):
-            layers.append(block(self.in_planes, planes, stride, nlayer, i, args, **kwargs))
-            self.in_planes = planes * block.expansion
-        return Sequential(*layers)
-
-    def forward(self, x):
-        out = self.activation(self.bn1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        out = F.avg_pool2d(out, 4)
-        out = out.view(out.size(0), -1)
-        out = self.linear(out)
-        return out
-
-
-class ResNet_g(nn.Module):
-    def __init__(self, block, num_blocks, args=None, **kwargs):
-        super(ResNet_g, self).__init__()
-        self.in_planes = 64
-        if args.dataset in ["CIFAR10", "CIFAR100"]:
-            linear_in = 512
-        elif args.dataset == "TinyImageNet":
-            linear_in = 512*2*2
-        elif args.dataset == "ImageNet":
-            linear_in = 512*7*7
-        else:
-            raise NotImplementedError
-
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
-        self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1, nlayer=0, args=args, **kwargs)
-        self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, nlayer=1, args=args, **kwargs)
-        self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2, nlayer=2, args=args, **kwargs)
-        self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2, nlayer=3, args=args, **kwargs)
-        self.linear = nn.Linear(linear_in*block.expansion, args.num_classes)
-
-        self.activation = get_activation(args.activation, args, **kwargs)
+        self.activation = nn.ReLU()
 
         self.grads = {}
         self.get_grad = False
@@ -396,34 +353,6 @@ def ResNet101(args, **kwargs):
 
 def ResNet152(args, **kwargs):
     return ResNet(Bottleneck, [3,8,36,3], args, **kwargs)
-
-# ResNet with grad hooks
-def ResNet18_g(args, **kwargs):
-    return ResNet_g(BasicBlock, [2,2,2,2], args, **kwargs)
-
-def ResNet34_g(args, **kwargs):
-    return ResNet_g(BasicBlock, [3,4,6,3], args, **kwargs)
-
-def ResNet50_g(args, **kwargs):
-    return ResNet_g(Bottleneck, [3,4,6,3], args, **kwargs)
-
-def ResNet101_g(args, **kwargs):
-    return ResNet_g(Bottleneck, [3,4,23,3], args, **kwargs)
-
-def ResNet152_g(args, **kwargs):
-    return ResNet_g(Bottleneck, [3,8,36,3], args, **kwargs)
-
-def ResNet18_2x2(args, **kwargs):
-    return ResNet_g(BasicBlock, [2,2,2,2], args, **kwargs)
-
-def ResNet101_2x2(args, **kwargs):
-    return ResNet_g(Bottleneck, [3,4,23,3], args, **kwargs)
-
-def ResNet18_4x4(args, **kwargs):
-    return ResNet_g(BasicBlock, [2,2,2,2], args, **kwargs)
-
-def ResNet101_4x4(args, **kwargs):
-    return ResNet_g(Bottleneck, [3,4,23,3], args, **kwargs)
 
 def ResNet18_hook(args, **kwargs):
     return ResNet_hook(BasicBlock, [2,2,2,2], args, **kwargs)

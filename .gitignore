@@ -1,6 +1,3 @@
-ACE_Defense.egg-info/
-dist/
-build/
 experiments/
 checkpoints/
 __pycache__/

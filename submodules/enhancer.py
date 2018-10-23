@@ -69,10 +69,10 @@ class EnNet(nn.Module):
 
 
 def ResNet18_en(args, **kwargs):
-    return EnNet(ResNet18(args, **kwargs), Enhancer(3, 3, 3, 2, lambd=args.lambd), args, **kwargs)
+    return EnNet(ResNet18(args, **kwargs), Enhancer(3,3,3,2, lambd=args.lambd), args, **kwargs)
 
 def Vgg11_en(args, **kwargs):
-    return EnNet(Vgg11(args, **kwargs), Enhancer(3, 3, 3, 2, lambd=args.lambd), args, **kwargs)
+    return EnNet(Vgg11(args, **kwargs), Enhancer(3,3,3,2, lambd=args.lambd), args, **kwargs)
 
 def ResNet152_en(args, **kwargs):
     return EnNet(ResNet152(args, **kwargs), Enhancer(3,3,3,2,lambd=args.lambd), args, **kwargs)
@@ -82,6 +82,7 @@ def Vgg19_en(args, **kwargs):
 
 def LeNet_en(args, **kwargs):
     return EnNet(LeNet(args, **kwargs), Enhancer(3,3,3,2,lambd=args.lambd), args, **kwargs)
+
 
 # Enhanced Autoencoder Networks
 class AENet(nn.Module):
@@ -117,8 +118,11 @@ def get_ae_model(autoencoder, model, args, **kwargs):
     multigpu = args.multigpu
     args.multigpu = 0
     args.model = model
+    args.autoencoder = False
     net = get_model(args)
+
     args.model = autoencoder
+    args.autoencoder = True
     args.ckpt_name = args.ckpt_ae
     autoencoder = get_model(args)
     aenet = AENet(autoencoder, net, args, **kwargs)

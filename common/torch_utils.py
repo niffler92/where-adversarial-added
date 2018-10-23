@@ -33,25 +33,6 @@ def adjust_learning_rate(lr, optimizer, epoch):
         param_group['lr'] = lr
 
 
-def get_activation(fn, args=None, **kwargs):
-    fn = fn.lower()
-
-    if fn == "sigmoid":
-        return nn.Sigmoid()
-    elif fn == "relu":
-        return nn.ReLU()
-    elif fn == "relu6":
-        return nn.ReLU6()
-    elif fn == "selu":
-        return nn.SELU()
-    elif fn == "elu":
-        return nn.ELU()
-    elif fn == "leakyrelu":
-        return nn.LeakyReLU()
-    else:
-        raise ValueError("Invalid activation name")
-
-
 def get_optimizer(optimizer, params, args):
     optimizer = optimizer.lower()
     assert optimizer in ['sgd', 'adam', 'rmsprop', 'sgd_nn', 'adadelta']
@@ -94,33 +75,30 @@ def get_checkpoint(args=None):
 
 
 def get_model(args):
-    args_orig = Namespace(**vars(args))  # copy
+    import submodules.models as models
+    import submodules.autoencoders as autoencoders
+
+    args_orig = Namespace(**vars(args))
     pretrained = args.pretrained
-    autoencoder = False
 
-    #FIXME: give attr for autoencoder networks
-    if 'segnet' in args.model or 'unet' in args.model:
-        autoencoder = True
+    autoencoders = sorted(name for name in dir(autoencoders))
+    for ae in autoencoders:
+        if ae + '_' in args.model and not args.autoencoder:
+            model = getattr(models, args.model)(args)
+            model.cuda() if args.cuda else model.cpu()
+            if args.multigpu:
+                model = nn.DataParallel(model, device_ids=list(range(args.multigpu)))
+            if args.half:
+                model.half()
+            return model
 
-    if '_' in args.model and autoencoder:
-        import submodules.models as models
-
-        model = getattr(models, args.model)(args)
-        model.cuda() if args.cuda else model.cpu()
-        if args.multigpu:
-            model = nn.DataParallel(model, device_ids=list(range(args.multigpu)))
-        if args.half:
-            model.half()
-
-        return model
-
-    if pretrained and (args.dataset != 'ImageNet' or autoencoder):
+    if pretrained and (args.dataset != 'ImageNet' or args.autoencoder):
         path = get_checkpoint(args)
         ckpt = torch.load(path, map_location=lambda storage, loc: storage)
         model_state = ckpt['model']
         args = ckpt['args']
 
-    if pretrained and args.dataset == 'ImageNet' and not autoencoder:
+    if pretrained and args.dataset == 'ImageNet' and not args.autoencoder:
         import torchvision.models as models
         model = getattr(models, args.model)(pretrained=True)
 
@@ -128,7 +106,7 @@ def get_model(args):
         import submodules.models as models
         model = getattr(models, args.model)(args)
 
-    if pretrained and (args.dataset != 'ImageNet' or autoencoder):
+    if pretrained and (args.dataset != 'ImageNet' or args.autoencoder):
         model_state_cpu = OrderedDict()
         for k in model_state.keys():
             if k.startswith("module."):

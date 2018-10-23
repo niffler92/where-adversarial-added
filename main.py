@@ -12,9 +12,7 @@ import torchvision.transforms as transforms
 import numpy as np
 
 from trainer import Trainer, AdvTrainer, AETrainer
-from attacker import Attacker
 from defender import Defender
-from analysis import Analysis
 
 import submodules.models as models
 import submodules.attacks as attacks
@@ -53,28 +51,13 @@ def main(args, scope):
         runner.train()
         logger.log("Training end!")
 
-    elif args.mode == 'attack':
-        logger.log("Attack start!")
-        runner = Attacker(val_loader, args)
-        runner.show_current_model()
-
-        runner.attack()
-        logger.log("Attack end!")
-
     elif args.mode == 'defense':
         logger.log("Defense start!")
         runner = Defender(val_loader, args)
         runner.show_current_model()
 
         runner.defend()
-        logger.log("Defend end!")
-
-    elif args.mode == 'analysis':
-        logger.log("Analysis start!")
-        runner = Analysis(val_loader, args)
-
-        runner.analysis()
-        logger.log("Analysis end!")
+        logger.log("Defense end!")
 
     arg_file = os.path.join(str(runner.log_path), 'args.json')
     with open(arg_file, 'w') as outfile:
@@ -88,7 +71,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='ACE-Defense')
     parser.add_argument('--mode', default='train', type=str,
-                        choices=['train', 'attack', 'defense', 'analysis'])
+                        choices=['train', 'defense'])
 
     # Datasets
     parser.add_argument('--dataset', default='CIFAR10', type=str,
