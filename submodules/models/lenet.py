@@ -370,8 +370,10 @@ class LeNet_conv75_nobn(nn.Module):
 class LeNet(nn.Module):
     def __init__(self, args, **kwargs):
         super(LeNet, self).__init__()
-        #self.conv1 = nn.Conv2d(1, 6, 5)  # For mnist
-        self.conv1 = nn.Conv2d(3, 6, 5)
+        if args.dataset == "MNIST":
+            self.conv1 = nn.Conv2d(1, 6, 5)
+        else:
+            self.conv1 = nn.Conv2d(3, 6, 5)
         self.bn1   = nn.BatchNorm2d(6)
         self.conv2 = nn.Conv2d(6, 16, 5)
         self.bn2   = nn.BatchNorm2d(16)
@@ -386,9 +388,9 @@ class LeNet(nn.Module):
             raise NotImplementedError
 
         self.fc1   = nn.Linear(linear_in, 120)
-        self.bn3   = nn.BatchNorm2d(120)
+        self.bn3   = nn.BatchNorm1d(120)
         self.fc2   = nn.Linear(120, 84)
-        self.bn4   = nn.BatchNorm2d(84)
+        self.bn4   = nn.BatchNorm1d(84)
         self.fc3   = nn.Linear(84, args.num_classes)
 
         self.activation1 = get_activation(args.activation, args, **kwargs)

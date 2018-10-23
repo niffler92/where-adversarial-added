@@ -68,9 +68,6 @@ def get_loader(
         ):
 
     assert dataset in ['CIFAR10', 'CIFAR100', 'MNIST', 'ImageNet', 'TinyImageNet'], "Unknown dataset"
-    #if DATASET_PATH:
-    #    assert HAS_DATASET, "Can't find dataset in nsml. Push or search the dataset"
-    #    root = os.path.join(DATASET_PATH, 'train')
 
     train_loader, val_loader = (torch.utils.data.DataLoader(
         globals()[dataset](root=root, train=is_training).preprocess(),
@@ -85,7 +82,7 @@ def get_loader(
 
 
 class MNIST(datasets.MNIST):
-    def __init__(self, root, train, download=False):
+    def __init__(self, root, train, download=True):
         super().__init__(root, train=train, download=download)
 
     def preprocess(self):
@@ -98,7 +95,7 @@ class MNIST(datasets.MNIST):
 
 
 class CIFAR10(datasets.CIFAR10):
-    def __init__(self, root, train, download=False):
+    def __init__(self, root, train, download=True):
         super().__init__(root, train=train, download=download)
 
     def preprocess(self):

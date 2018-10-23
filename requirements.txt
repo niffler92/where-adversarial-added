@@ -1,5 +1,0 @@
-humanfriendly
-tensorboardX
-torchvision
-requests
-slackclient

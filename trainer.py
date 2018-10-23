@@ -14,7 +14,6 @@ from settings import PROJECT_ROOT
 from common.logger import Logger
 from common.torch_utils import to_np, get_optimizer, get_model, plot_grad_heatmap
 from common.summary import EvaluationMetrics
-from submodules.activation import CustomActivation
 from submodules import attacks
 
 
@@ -35,7 +34,7 @@ class Trainer:
 
         # Log
         self.log_path = (
-                PROJECT_ROOT / Path("experiments") /
+                PROJECT_ROOT / Path(args.save_dir) /
                 Path(datetime.now().strftime("%Y%m%d%H%M%S") + "-")
                 ).as_posix()
         self.log_path = Path(self.get_dirname(self.log_path, args))
@@ -106,8 +105,8 @@ class Trainer:
             accuracy = (labels == preds.squeeze()).float().mean()
 
             batch_size = labels.size(0)
-            eval_metrics.update('Loss', loss.data[0], batch_size)
-            eval_metrics.update('Acc', accuracy.data[0], batch_size)
+            eval_metrics.update('Loss', float(loss), batch_size)
+            eval_metrics.update('Acc', float(accuracy), batch_size)
             eval_metrics.update('Time', elapsed_time, batch_size)
 
             if self.step % self.args.log_step == 0:
@@ -149,8 +148,8 @@ class Trainer:
             accuracy = (labels == preds.squeeze()).float().mean()
 
             batch_size = labels.size(0)
-            eval_metrics.update('Loss', loss.data[0], batch_size)
-            eval_metrics.update('Acc', accuracy.data[0], batch_size)
+            eval_metrics.update('Loss', float(loss), batch_size)
+            eval_metrics.update('Acc', float(accuracy), batch_size)
             eval_metrics.update('Time', elapsed_time, batch_size)
 
         # Save best model

@@ -20,7 +20,6 @@ import submodules.models as models
 import submodules.attacks as attacks
 import submodules.defenses as defenses
 from dataloader import get_loader
-from common.utils import find_class_by_name
 from common.logger import Logger
 import settings
 
@@ -39,10 +38,6 @@ def main(args, scope):
             batch_size=args.batch_size,
             num_workers=args.workers
     )
-
-    if args.resume:
-        #TODO: implement load&save in pytorch
-        pass
 
     if args.mode == 'train':
         logger.log("Training start!")
@@ -92,6 +87,8 @@ if __name__ == '__main__':
     defense_names = sorted(name for name in dir(defenses))
 
     parser = argparse.ArgumentParser(description='ACE-Defense')
+    parser.add_argument('--mode', default='train', type=str,
+                        choices=['train', 'attack', 'defense', 'analysis'])
 
     # Datasets
     parser.add_argument('--dataset', default='CIFAR10', type=str,
@@ -108,7 +105,6 @@ if __name__ == '__main__':
     parser.add_argument("--conv_weight_init", default='xavier_normal', type=str,
                         help="weight initialization for convolution",
                         choices=dir(torch.nn.init))
-    parser.add_argument("--sn", action='store_true', help="Spectral Normalization")
 
     # Optimization options
     parser.add_argument("--optimizer", default="SGD", type=str.lower,
@@ -126,15 +122,14 @@ if __name__ == '__main__':
                         metavar='LR', help='initial learning rate')
     parser.add_argument('--weight_decay', '--wd', default=5e-4, type=float,
                         metavar='W', help='weight decay (default: 5e-4)')
-    parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
-                        help='evaluate model on validation set')
-    parser.add_argument('--resume', default='', type=str, metavar='PATH',
-                        help='path to latest checkpoint (default: none)')
     parser.add_argument('--half', dest='half', action='store_true',
                         help='use half-precision(16-bit) ')
     parser.add_argument('--save_dir', dest='save_dir',
                         help='The directory used to save the trained models',
-                        default='save_temp', type=str)
+                        default='./experiments', type=str)
+    parser.add_argument('--load_dir', dest='load_dir',
+                        help='The directory used to load the trained models',
+                        default='./checkpoints', type=str)
     parser.add_argument("--pretrained", action='store_true',
                         help="Whether to use a pretrained model." + \
                         "The model must be saved in the checkpoint directory.")
@@ -217,7 +212,7 @@ if __name__ == '__main__':
 
 
     args = parser.parse_args()
-    args.cuda = False if args.no_cuda else True
+    args.cuda = False if args.no_cuda else torch.cuda.is_available()
 
     # Set num_classes according to dataset
     if args.dataset in ['MNIST', 'CIFAR10']:

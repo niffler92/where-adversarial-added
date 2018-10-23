@@ -9,7 +9,6 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 
-from common.utils import get_checkpoint
 from settings import PROJECT_ROOT
 from dataloader import get_loader
 
@@ -85,6 +84,15 @@ def get_optimizer(optimizer, params, args):
         )
 
 
+def get_checkpoint(args=None):
+    if args.ckpt_name:
+        root = os.path.join(args.load_dir, args.ckpt_name)
+    else:
+        root = os.path.join(args.load_dir, args.dataset, args.model)
+    assert os.path.isfile(root), "Checkpoint file does not exist."
+    return root
+
+
 def get_model(args):
     args_orig = Namespace(**vars(args))  # copy
     pretrained = args.pretrained
@@ -96,6 +104,7 @@ def get_model(args):
 
     if '_' in args.model and autoencoder:
         import submodules.models as models
+
         model = getattr(models, args.model)(args)
         model.cuda() if args.cuda else model.cpu()
         if args.multigpu:
@@ -158,9 +167,8 @@ def init_params(model, args=None):
                 m.bias.data.zero_()
 
         elif isinstance(m, nn.BatchNorm2d):
-            if not args.no_bn and not args.no_affine:
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
+            m.weight.data.fill_(1)
+            m.bias.data.zero_()
 
         elif isinstance(m, nn.Linear):
             #nn.init.xavier_normal(m.weight)

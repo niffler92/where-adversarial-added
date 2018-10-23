@@ -1,13 +1,15 @@
 from distutils.core import setup
+import setuptools
+
 setup(
     name='ACE-Defense',
-    install_requires =[
-        'pillow',
+    version='1.0',
+    description='Experiment settings for ACE: Artificial Checkerboard Enhancer to Induce and Evade Adversarial Attacks (2018)',
+    install_requires=[
+        'torch',
+        'torchvision',
         'tensorboardX==1.2',
         'termcolor',
-        'psutil',
-        'seaborn',
-        'cython',
         'scikit-image'
     ]
 )

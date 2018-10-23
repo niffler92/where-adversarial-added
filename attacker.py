@@ -32,7 +32,7 @@ class Attacker(Trainer):
         self.cuda = self.args.cuda
 
         self.log_path = (
-                PROJECT_ROOT / Path("experiments") /
+                PROJECT_ROOT / Path(args.save_dir) /
                 Path(datetime.now().strftime("%Y%m%d%H%M%S") + "-")
                 ).as_posix()
         self.log_path = Path(self.get_dirname(self.log_path, args))

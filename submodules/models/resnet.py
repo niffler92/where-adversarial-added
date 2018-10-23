@@ -13,7 +13,6 @@ from torch.nn import Sequential
 from torch.autograd import Variable
 
 from common.torch_utils import get_activation
-from submodules.spectralnorm import SpectralNorm
 
 
 __all__ = ['ResNet18', 'ResNet34', 'ResNet50', 'ResNet101', 'ResNet152']
@@ -37,17 +36,16 @@ class BasicBlock(nn.Module):
             ks = 3
             padding = 1
 
-        self.conv1 = SpectralNorm(nn.Conv2d(in_planes, planes, kernel_size=ks, stride=stride, padding=padding, bias=False), args.sn)
+        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=ks, stride=stride, padding=padding, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = SpectralNorm(nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False), args.sn)
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
 
         self.shortcut = Sequential()
         if stride != 1 or in_planes != self.expansion*planes:
             shortcut_ks = 2 if '2x2' in args.model or '4x4' in args.model else 1
             self.shortcut = Sequential(
-                SpectralNorm(nn.Conv2d(in_planes, self.expansion*planes, kernel_size=shortcut_ks, stride=stride, bias=False), args.sn),
-                #SpectralNorm(nn.Conv2d(in_planes, self.expansion*planes, kernel_size=2, stride=stride, bias=False), args.sn),
+                nn.Conv2d(in_planes, self.expansion*planes, kernel_size=shortcut_ks, stride=stride, bias=False),
                 nn.BatchNorm2d(self.expansion*planes)
             )
 
@@ -78,17 +76,17 @@ class Bottleneck(nn.Module):
             ks = 3
             padding = 1
 
-        self.conv1 = SpectralNorm(nn.Conv2d(in_planes, planes, kernel_size=1, bias=False), args.sn)
+        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = SpectralNorm(nn.Conv2d(planes, planes, kernel_size=ks, stride=stride, padding=padding, bias=False), args.sn)
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=ks, stride=stride, padding=padding, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
-        self.conv3 = SpectralNorm(nn.Conv2d(planes, self.expansion*planes, kernel_size=1, bias=False), args.sn)
+        self.conv3 = nn.Conv2d(planes, self.expansion*planes, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(self.expansion*planes)
 
         self.shortcut = Sequential()
         if stride != 1 or in_planes != self.expansion*planes:
             self.shortcut = Sequential(
-                SpectralNorm(nn.Conv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=False), args.sn),
+                nn.Conv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(self.expansion*planes)
             )
 
@@ -119,7 +117,7 @@ class ResNet(nn.Module):
         else:
             raise NotImplementedError
 
-        self.conv1 = SpectralNorm(nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False), args.sn)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1, nlayer=0, args=args, **kwargs)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, nlayer=1, args=args, **kwargs)
@@ -162,7 +160,7 @@ class ResNet_g(nn.Module):
         else:
             raise NotImplementedError
 
-        self.conv1 = SpectralNorm(nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False), args.sn)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1, nlayer=0, args=args, **kwargs)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, nlayer=1, args=args, **kwargs)
