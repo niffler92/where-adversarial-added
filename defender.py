@@ -129,12 +129,12 @@ class Defender(Attacker):
 
             if self.step % self.args.img_log_step == 0:
                 image_dict = {
-                    'Original': denormalize(images, self.args.dataset)[0],
-                    'Attacked': denormalize(adv_images, self.args.dataset)[0],
-                    'Defensed': denormalize(def_images, self.args.dataset)[0],
-                    'Perturbation': denormalize(images - adv_images, self.args.dataset)[0]
+                    'Original': to_np(denormalize(images, self.args.dataset))[0],
+                    'Attacked': to_np(denormalize(adv_images, self.args.dataset))[0],
+                    'Defensed': to_np(denormalize(def_images, self.args.dataset))[0],
+                    'Perturbation': to_np(denormalize(images - adv_images, self.args.dataset))[0]
                 }
-                #self.logger.image_summary(image_dict, self.step)
+                self.logger.image_summary(image_dict, self.step)
 
             defense_rate = eval_metrics.avg['Test/Acc'] - defense_metrics.avg['Defense/Acc']
             if eval_metrics.avg['Test/Acc'] - attack_metrics.avg['Attack/Acc']:

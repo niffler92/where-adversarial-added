@@ -45,13 +45,9 @@ class Attacker(Trainer):
         self.logger.add_level('ARTIFACT', -1)
 
         self.kwargs = kwargs
-        if True: #args.log_artifact or args.domain_restrict:
-            import numpy as np
-            for T in np.arange(0,1.1,0.1):
-                args.T = T
-                self.artifact = get_artifact(self.model, val_loader, args)
-                self.kwargs['artifact'] = self.artifact
-            raise
+        if args.log_artifact or args.domain_restrict:
+            self.artifact = get_artifact(self.model, val_loader, args)
+            self.kwargs['artifact'] = self.artifact
 
     def attack(self):
         self.model.eval()
@@ -143,10 +139,10 @@ class Attacker(Trainer):
 
             elapsed_time = time.time() - st
             batch_size = labels.size(0)
-            eval_metrics.update('Attack/Acc', adv_acc, batch_size)
-            eval_metrics.update('AccDrop', acc_drop, batch_size)
-            eval_metrics.update('Success', success_rate, batch_size)
-            eval_metrics.update('Conf', confidence, (confidence > 0)*batch_size)
+            eval_metrics.update('Attack/Acc', float(adv_acc), batch_size)
+            eval_metrics.update('AccDrop', float(acc_drop), batch_size)
+            eval_metrics.update('Success', float(success_rate), batch_size)
+            eval_metrics.update('Conf', float(confidence), float(confidence > 0)*batch_size)
             eval_metrics.update('Time', elapsed_time, batch_size)
 
             if self.step % self.args.avg_step == 0 or self.step == len(self.val_loader):

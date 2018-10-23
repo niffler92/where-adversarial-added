@@ -84,16 +84,18 @@ class Logger:
             if not isinstance(img, np.ndarray):
                 try:
                     img = np.reshape(np.asarray(img), list(img.shape))
-                    info[k] = img
                     assert len(info[k]) == 3, "image must be a 3D array (C, H, W)"
                 except:
                     raise TypeError("image must be an array-like instance")
-            if save:
-                # Save as Numpy array
-                np.save(self.log_dir + '/numpy/' + k, img)
 
-                # Save as PNG file
-                img = np.transpose(img, [1,2,0])
+            img = (img*255).astype(np.uint8)
+            if img.shape[0] == 1:
+                img = np.repeat(img, 3, axis=0)
+            img = np.transpose(img, [1,2,0])
+            info[k] = img
+
+            if save:
+                np.save(self.log_dir + '/numpy/' + k, img)
                 if img.shape[-1] == 3:
                     img = Image.fromarray(img, 'RGB')
                 else:
@@ -101,30 +103,6 @@ class Logger:
                 img.save(self.log_dir + '/image/' + k + '.png')
 
         self.t_logger.image_summary(info, step)
-
-    def histo_summary(self, info, step):
-        raise NotImplementedError
-
-    def heatmap_summary(self, info, step, save=True):
-        assert isinstance(info, dict), "data must be a dictionary"
-        for k, img in info.items():
-            assert len(img.shape) == 2, "image must be a 2D array"
-            if not isinstance(img, np.ndarray):
-                try:
-                    img = np.reshape(np.asarray(img), list(img.shape))
-                    info[k] = img
-                except:
-                    raise TypeError("image must be an array-like instance")
-
-        if save:
-            self.check_savedir()
-            for k, v in info.items():
-                np.save(self.log_dir + '/numpy/' + k, v)
-
-        #        heatmap = sns.heatmap(v)
-        #        heatmap.figure.savefig(
-        #                fname="{}/image/{}.png".format(self.log_dir, k)
-        #                )
 
     def check_savedir(self):
         if self.log_dir:
@@ -158,12 +136,4 @@ class TLogger:
     def image_summary(self, info, step):
         if self.writer is not None:
             for k, v in info.items():
-                v = np.rollaxis(v,0,3)
-                v = np.rollaxis(v,0,-1)
                 self.writer.add_image(k, v, step)
-
-    def histo_summary(self, info, step):
-        raise NotImplementedError
-
-    def heatmap_summary(self, info, step):
-        raise NotImplementedError
