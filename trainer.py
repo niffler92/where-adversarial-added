@@ -12,7 +12,7 @@ from scipy.stats import norm
 
 from settings import PROJECT_ROOT
 from common.logger import Logger
-from common.torch_utils import to_np, get_optimizer, get_model, plot_grad_heatmap
+from common.torch_utils import to_np, get_optimizer, get_model
 from common.summary import EvaluationMetrics
 from submodules import attacks
 
@@ -64,9 +64,6 @@ class Trainer:
             self.train_epoch()
             self.eval()
 
-            if self.epoch in [1, int(self.args.epochs/4), int(self.args.epochs/2), int(self.args.epochs*3/4)]:
-                plot_grad_heatmap(self.model, self.args, self.logger, self.epoch)
-
         self.logger.writer.export_scalars_to_json(
             self.log_path.as_posix() + "/scalars-{}-{}-{}.json".format(
                 self.args.model,
@@ -74,7 +71,6 @@ class Trainer:
                 self.args.activation
             )
         )
-        plot_grad_heatmap(self.model, self.args, self.logger, self.epoch)
         self.logger.writer.close()
 
     def train_epoch(self):
@@ -165,8 +161,6 @@ class Trainer:
         path += "{}-".format(getattr(args, 'dataset'))
         path += "{}-".format(getattr(args, 'seed'))
         path += "{}-".format(getattr(args, 'model'))
-        path += "{}-".format(getattr(args, 'activation'))
-        path += "{}-".format(getattr(args, 'dropout'))
         return path
 
     def save(self, filename=None):
@@ -188,9 +182,6 @@ class Trainer:
         self.epoch = S['epoch']
         self.best_acc = S['best_acc']
         self.args = S['args']
-
-    def infer(self):
-        self.eval()
 
     def maybe_delete_old_pth(self, log_path, max_to_keep):
         """Model filename must end with xxx-xxx-[epoch].pth
@@ -232,7 +223,6 @@ class Trainer:
                 param_group['lr'] = self.lr
 
     def compute_loss(self, images, labels):
-        #TODO: check if RNN
         outputs = self.model(images)
         loss = self.criterion(outputs, labels)
         return outputs, loss

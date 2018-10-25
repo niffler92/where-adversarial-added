@@ -39,23 +39,37 @@ def main(args, scope):
 
     if args.mode == 'train':
         logger.log("Training start!")
-        if args.adversarial:
-            logger.log("Adversarial Training with {}....".format(args.attack))
-            runner = AdvTrainer(train_loader, val_loader, args)
-        elif args.autoencoder:
-            runner = AETrainer(train_loader, val_loader, args)
-        else:
-            runner = Trainer(train_loader, val_loader, args)
-        runner.show_current_model()
+        args.autoencoder = False
 
+        runner = Trainer(train_loader, val_loader, args)
+        runner.show_current_model()
+        runner.train()
+        logger.log("Training end!")
+
+    elif args.mode == 'train_adv':
+        logger.log("Adversarial Training with {}....".format(args.attack))
+        args.autoencoder = False
+
+        runner = AdvTrainer(train_loader, val_loader, args)
+        runner.show_current_model()
+        runner.train()
+        logger.log("Training end!")
+
+    elif args.mode == 'train_ae':
+        logger.log("Training start!")
+        args.autoencoder = True
+
+        runner = AETrainer(train_loader, val_loader, args)
+        runner.show_current_model()
         runner.train()
         logger.log("Training end!")
 
     elif args.mode == 'defense':
         logger.log("Defense start!")
+        args.autoencoder = False
+
         runner = Defender(val_loader, args)
         runner.show_current_model()
-
         runner.defend()
         logger.log("Defense end!")
 
@@ -71,7 +85,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='ACE-Defense')
     parser.add_argument('--mode', default='train', type=str,
-                        choices=['train', 'defense'])
+                        choices=['train', 'train_adv', 'train_ae', 'defense'])
 
     # Datasets
     parser.add_argument('--dataset', default='CIFAR10', type=str,
@@ -82,19 +96,16 @@ if __name__ == '__main__':
     # Architecture
     parser.add_argument('--model', '-a', metavar='MODEL', default='vgg11', choices=model_names,
                         help='model architecture: ' + ' | '.join(model_names) + ' (default: vgg11)')
-    parser.add_argument("--activation", default="relu", type=str)
     parser.add_argument("--beta", default=1, type=float)
     parser.add_argument("--dropout", default=0, type=float)
     parser.add_argument("--conv_weight_init", default='xavier_normal', type=str,
                         help="weight initialization for convolution",
                         choices=dir(torch.nn.init))
 
-    # Optimization options
+    # Training options
     parser.add_argument("--optimizer", default="SGD", type=str.lower,
                         choices=['sgd', 'adam', 'rmsprop', 'sgd_nn', 'adadelta'])
     parser.add_argument('--momentum', default=0.9, type=float, metavar='M', help='momentum')
-
-    # Run options
     parser.add_argument('--epochs', default=100, type=int, metavar='N',
                         help='number of total epochs to run')
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
@@ -170,14 +181,6 @@ if __name__ == '__main__':
     parser.add_argument("--window", type=int, default=10)
     parser.add_argument("--sigma", type=float, default=0.04)
 
-    # Boundary analysis options
-    parser.add_argument("--max_eps", default=100, type=float,
-                        help="the maximum size of perturbation")
-    parser.add_argument("--len_eps", default=200, type=int,
-                        help="number of sample perturbations")
-    parser.add_argument("--img_first", default=0, type=int)
-    parser.add_argument("--img_last", default=99, type=int)
-
     # EOT
     parser.add_argument("--eot_attack", default='pgd', type=str)
     parser.add_argument("--eot_norm", default='l2', type=str)
@@ -185,14 +188,11 @@ if __name__ == '__main__':
     parser.add_argument("--eot_iter", default=1000, type=int)
 
     # Adversarial Training
-    parser.add_argument("--adversarial", action='store_true', help="Flag for adversarial training")
     parser.add_argument("--alpha", default=0.5, type=float,
                         help="Ratio between adversarial loss and clean loss")
 
     # Autoencoder Options
-    parser.add_argument("--autoencoder", action='store_true', help="Flag for autoencoder training")
     parser.add_argument("--ckpt_ae", type=str, default=None)
-
 
     args = parser.parse_args()
     args.cuda = False if args.no_cuda else torch.cuda.is_available()
@@ -208,12 +208,6 @@ if __name__ == '__main__':
         args.num_classes = 1000
     else:
         raise NotImplementedError
-
-    # Default options for analysis mode
-    if args.mode == 'analysis':
-        args.batch_size = 1
-        args.learning_rate = 0.001
-        args.optimizer = 'Adam'
 
     if args.T is not None:
         args.domain_restrict = True

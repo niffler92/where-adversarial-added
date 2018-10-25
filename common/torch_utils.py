@@ -139,7 +139,6 @@ def init_params(model, args=None):
     """
     for m in model.modules():
         if isinstance(m, nn.Conv2d):
-            #nn.init.xavier_normal(m.weight)
             getattr(nn.init, args.conv_weight_init)(m.weight)
             if m.bias is not None:
                 m.bias.data.zero_()
@@ -149,7 +148,6 @@ def init_params(model, args=None):
             m.bias.data.zero_()
 
         elif isinstance(m, nn.Linear):
-            #nn.init.xavier_normal(m.weight)
             getattr(nn.init, args.conv_weight_init)(m.weight)
             m.bias.data.zero_()
 
@@ -157,57 +155,3 @@ def init_params(model, args=None):
             for module in m._modules:
                 try: init_params(module, args=args)
                 except: continue
-
-
-def plot_grad_heatmap(model, args, logger, epoch):
-    """model must have gradient hook in order to get gradients
-    """
-    if not hasattr(model, "save_grad"):
-        logger.log("No gradient hook on model. No heatmap will be generated", 'WARNING')
-        return
-
-    def move_axis(sample):
-        if len(sample.shape) == 4:
-            return np.moveaxis(sample, [1, 2, 3], [3, 1, 2])
-        elif len(sample.shape) == 3:
-            return np.moveaxis(sample, [0, 1, 2], [2, 0, 1])
-
-    def get_gradient(sample, label, model):
-        sample = sample.cuda()
-        label = label.cuda()
-        model.cuda()
-
-        model.set_grad()
-        out = model(sample)
-        criterion = nn.CrossEntropyLoss()
-        loss = criterion(out, label)
-
-        if 'input' in model.grads and model.grads['input'].grad:
-            for key in model.grads.keys():
-                model.grads[key].grad.data.zero_()
-        loss.backward()
-
-        return out, model.grads
-
-    model.train()
-    abs_grads = {}
-
-    _, val_loader = get_loader(args.dataset, batch_size=64, num_workers=args.workers)
-    for x_train, y_train in val_loader:
-        x_train, y_train = Variable(x_train, requires_grad=True), Variable(y_train)
-        if args.cuda:
-            x_train, y_train = x_train.cuda(), y_train.cuda()
-
-        _, grads = get_gradient(x_train, y_train, model)
-
-        for key in grads.keys():
-            abs_grad = np.abs(move_axis(to_np(grads[key]))).sum((0, 3))
-
-            if key in abs_grads:
-                abs_grads[key] += abs_grad
-            else:
-                abs_grads[key] = abs_grad
-
-    for key in grads.keys():
-        abs_grads[key] = torch.from_numpy(abs_grads[key])
-    logger.heatmap_summary(abs_grads, step="Gradient_val-{}".format(epoch))
