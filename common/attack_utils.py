@@ -104,41 +104,12 @@ def get_rf(model, images, args):
 
 def get_artifact(model, dataloader, args):
     images, _ = iter(dataloader).next()
-    if args.mode == 'analysis':
-        width, height = images.shape[2:]
-        if 'conv32' in args.model:
-            artifact = get_cb_grid(width, height, 3, 2)
-        elif 'conv75' in args.model:
-            artifact = get_cb_grid(width, height, 7, 5)
-        elif 'segnet' in args.model:
-            artifact = get_cb_grid(width, height, 1, 2, padding=1)
-        else:
-            artifact = get_cb_grid(width, height, 1, 2)
+    artifact = get_rf(model, images, args)
+    artifact = (artifact - torch.min(artifact))/(torch.max(artifact) - torch.min(artifact))
 
-        artifact = torch.FloatTensor(artifact)
-        if args.cuda:
-            artifact = artifact.cuda()
-
-    else:
-        artifact = get_rf(model, images, args)
-        artifact = (artifact - torch.min(artifact))/(torch.max(artifact) - torch.min(artifact))
-        from common.logger import Logger
-        logger = Logger('analysis')
-        logger.heatmap_summary({'overlaps': artifact}, 0, False)
-        raise
-
-        k = np.prod(artifact.shape)*args.T - 1
-        k = int(k)*(k > 0)
-        topk = torch.sort(artifact.view(-1), descending=True)[0][k]
-        artifact = (artifact > topk).float()
-
-        checkerboard = get_cb_grid(224, 224, 1, 2, padding=0)
-        checkerboard = torch.FloatTensor(checkerboard)
-        if args.cuda:
-            checkerboard = checkerboard.cuda()
-
-        intersection = (artifact.byte()*checkerboard.byte()).float()
-        print(torch.sum(intersection)/torch.sum(checkerboard))
-
+    k = np.prod(artifact.shape)*args.G - 1
+    k = int(k)*(k > 0)
+    topk = torch.sort(artifact.view(-1), descending=True)[0][k]
+    artifact = (artifact > topk).float()
 
     return artifact

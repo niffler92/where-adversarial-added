@@ -33,10 +33,10 @@ class VGG(nn.Module):
         self.features = self.make_layers(cfg)
 
         self.classifier = Sequential(
-            nn.Dropout(args.dropout),
+            nn.Dropout(0),
             nn.Linear(linear_in, 512),
             nn.ReLU(),
-            nn.Dropout(args.dropout),
+            nn.Dropout(0),
             nn.Linear(512, 512),
             nn.ReLU(),
             nn.Linear(512, args.num_classes),

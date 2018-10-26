@@ -49,7 +49,7 @@ class Defender(Trainer):
         self.logger.add_level("DIST", 11, 'white')
 
         self.kwargs = kwargs
-        if args.log_artifact or args.domain_restrict:
+        if args.domain_restrict:
             self.artifact = get_artifact(self.model, val_loader, args)
             self.kwargs['artifact'] = self.artifact
 
@@ -133,7 +133,7 @@ class Defender(Trainer):
             eval_def_metrics.update('Def-Test/Top5', float(top5), labels.size(0))
             eval_def_metrics.update('Def-Test/Time', time.time()-st, labels.size(0))
 
-            if self.step % self.args.avg_step == 0 or self.step == len(self.val_loader):
+            if self.step % self.args.log_step == 0 or self.step == len(self.val_loader):
                 self.logger.scalar_summary(eval_metrics.avg, self.step, 'TEST')
                 self.logger.scalar_summary(eval_def_metrics.avg, self.step, 'TEST')
                 self.logger.scalar_summary(attack_metrics.avg, self.step, 'ATTACK')

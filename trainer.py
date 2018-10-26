@@ -10,7 +10,7 @@ import torch.nn as nn
 import numpy as np
 from scipy.stats import norm
 
-from settings import PROJECT_ROOT
+from settings import PROJECT_ROOT, SAVE_DIR
 from common.logger import Logger
 from common.torch_utils import to_np, get_optimizer, get_model
 from common.summary import EvaluationMetrics
@@ -34,7 +34,7 @@ class Trainer:
 
         # Log
         self.log_path = (
-                PROJECT_ROOT / Path(args.save_dir) /
+                PROJECT_ROOT / Path(SAVE_DIR) /
                 Path(datetime.now().strftime("%Y%m%d%H%M%S") + "-")
                 ).as_posix()
         self.log_path = Path(self.get_dirname(self.log_path, args))
@@ -160,7 +160,7 @@ class Trainer:
     def get_dirname(self, path, args):
         path += "{}-".format(getattr(args, 'dataset'))
         path += "{}-".format(getattr(args, 'seed'))
-        path += "{}-".format(getattr(args, 'model'))
+        path += "{}".format(getattr(args, 'model'))
         return path
 
     def save(self, filename=None):
@@ -276,8 +276,8 @@ class AdvTrainer(Trainer):
             accuracy = (labels == preds.squeeze()).float().mean()
 
             batch_size = labels.size(0)
-            eval_metrics.update('Loss', loss.data[0], batch_size)
-            eval_metrics.update('Acc', accuracy.data[0], batch_size)
+            eval_metrics.update('Loss', float(loss.data[0]), batch_size)
+            eval_metrics.update('Acc', float(accuracy.data[0]), batch_size)
             eval_metrics.update('Time', elapsed_time, batch_size)
 
             if self.step % self.args.log_step == 0:
@@ -345,7 +345,7 @@ class AETrainer(Trainer):
             elapsed_time = time.time() - st
 
             batch_size = images.size(0)
-            eval_metrics.update('Loss', loss.data[0], batch_size)
+            eval_metrics.update('Loss', float(loss.data[0]), batch_size)
             eval_metrics.update('Time', elapsed_time, batch_size)
 
             if self.step % self.args.log_step == 0:
@@ -380,7 +380,7 @@ class AETrainer(Trainer):
             elapsed_time = time.time() - st
 
             batch_size = images.size(0)
-            eval_metrics.update('Loss', loss.data[0], batch_size)
+            eval_metrics.update('Loss', float(loss.data[0]), batch_size)
             eval_metrics.update('Time', elapsed_time, batch_size)
 
         # Save best model

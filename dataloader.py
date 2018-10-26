@@ -4,6 +4,8 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.autograd import Variable
 
+from settings import DATA_DIR
+
 
 def data_stats(dataset):
     """
@@ -62,7 +64,7 @@ def normalize(images, dataset):
 
 def get_loader(
         dataset='CIFAR10',
-        root='./data',
+        root=DATA_DIR,
         batch_size=128,
         num_workers=4
         ):

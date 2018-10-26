@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 
-from settings import PROJECT_ROOT
+from settings import PROJECT_ROOT, LOAD_DIR
 from dataloader import get_loader
 
 
@@ -67,9 +67,9 @@ def get_optimizer(optimizer, params, args):
 
 def get_checkpoint(args=None):
     if args.ckpt_name:
-        root = os.path.join(args.load_dir, args.ckpt_name)
+        root = os.path.join(LOAD_DIR, args.ckpt_name)
     else:
-        root = os.path.join(args.load_dir, args.dataset, args.model)
+        root = os.path.join(LOAD_DIR, args.dataset, args.model)
     assert os.path.isfile(root), "Checkpoint file does not exist."
     return root
 

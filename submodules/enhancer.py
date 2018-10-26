@@ -6,7 +6,7 @@ from common.torch_utils import to_var, get_model
 from submodules.models import *
 from submodules.autoencoders import *
 
-__all__ = ['ResNet18_en', 'Vgg11_en', 'ResNet152_en', 'Vgg19_en', 'LeNet_en']
+__all__ = ['ace_ResNet18', 'ace_Vgg11', 'ace_ResNet152', 'ace_Vgg19']
 __all__ += ['segnet_resnet152', 'segnet_vgg19']
 __all__ += ['unet_resnet152', 'unet_vgg19']
 
@@ -68,20 +68,17 @@ class EnNet(nn.Module):
         return out
 
 
-def ResNet18_en(args, **kwargs):
+def ace_ResNet18(args, **kwargs):
     return EnNet(ResNet18(args, **kwargs), Enhancer(3,3,3,2, lambd=args.lambd), args, **kwargs)
 
-def Vgg11_en(args, **kwargs):
+def ace_Vgg11(args, **kwargs):
     return EnNet(Vgg11(args, **kwargs), Enhancer(3,3,3,2, lambd=args.lambd), args, **kwargs)
 
-def ResNet152_en(args, **kwargs):
+def ace_ResNet152(args, **kwargs):
     return EnNet(ResNet152(args, **kwargs), Enhancer(3,3,3,2,lambd=args.lambd), args, **kwargs)
 
-def Vgg19_en(args, **kwargs):
+def ace_Vgg19(args, **kwargs):
     return EnNet(Vgg19(args, **kwargs), Enhancer(3,3,3,2,lambd=args.lambd), args, **kwargs)
-
-def LeNet_en(args, **kwargs):
-    return EnNet(LeNet(args, **kwargs), Enhancer(3,3,3,2,lambd=args.lambd), args, **kwargs)
 
 
 # Enhanced Autoencoder Networks

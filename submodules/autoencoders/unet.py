@@ -154,7 +154,6 @@ class UNet(nn.Module):
         super(UNet, self).__init__()
         self.std = to_var(torch.FloatTensor(data_stats(args.dataset)[1]))
         self.std = self.std.view(1,-1,1,1)
-        self.eps = args.eps
 
         if up_mode in ('transpose', 'upsample'):
             self.up_mode = up_mode
