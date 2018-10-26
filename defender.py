@@ -140,6 +140,22 @@ class Defender(Trainer):
                 self.logger.scalar_summary(defense_metrics.avg, self.step, 'DEFENSE')
                 self.logger.scalar_summary(dist_metrics.avg, self.step, 'DIST')
 
+                defense_rate = eval_metrics.avg['Test/Acc'] - defense_metrics.avg['Defense/Acc']
+                if eval_metrics.avg['Test/Acc'] - attack_metrics.avg['Attack/Acc']:
+                    defense_rate /= eval_metrics.avg['Test/Acc'] - attack_metrics.avg['Attack/Acc']
+                else:
+                    defense_rate = 0
+                defense_rate = 1 - defense_rate
+
+                defense_top5 = eval_metrics.avg['Test/Top5'] - defense_metrics.avg['Defense/Top5']
+                if eval_metrics.avg['Test/Top5'] - attack_metrics.avg['Attack/Top5']:
+                    defense_top5 /= eval_metrics.avg['Test/Top5'] - attack_metrics.avg['Attack/Top5']
+                else:
+                    defense_top5 = 0
+                defense_top5 = 1 - defense_top5
+
+                self.logger.log("Defense Rate Top1: {:5.3f} | Defense Rate Top5: {:5.3f}".format(defense_rate, defense_top5), 'DEFENSE')
+
             if self.step % self.args.img_log_step == 0:
                 image_dict = {
                     'Original': to_np(denormalize(images, self.args.dataset))[0],
@@ -148,22 +164,6 @@ class Defender(Trainer):
                     'Perturbation': to_np(denormalize(images - adv_images, self.args.dataset))[0]
                 }
                 self.logger.image_summary(image_dict, self.step)
-
-            defense_rate = eval_metrics.avg['Test/Acc'] - defense_metrics.avg['Defense/Acc']
-            if eval_metrics.avg['Test/Acc'] - attack_metrics.avg['Attack/Acc']:
-                defense_rate /= eval_metrics.avg['Test/Acc'] - attack_metrics.avg['Attack/Acc']
-            else:
-                defense_rate = 0
-            defense_rate = 1 - defense_rate
-
-            defense_top5 = eval_metrics.avg['Test/Top5'] - defense_metrics.avg['Defense/Top5']
-            if eval_metrics.avg['Test/Top5'] - attack_metrics.avg['Attack/Top5']:
-                defense_top5 /= eval_metrics.avg['Test/Top5'] - attack_metrics.avg['Attack/Top5']
-            else:
-                defense_top5 = 0
-            defense_top5 = 1 - defense_top5
-
-            self.logger.log("Defense Rate Top1: {:5.3f} | Defense Rate Top5: {:5.3f}".format(defense_rate, defense_top5), 'DEFENSE')
 
     def calc_stats(self, method, gen_images, images, gen_labels, labels, metrics):
         """gen_images: Generated from attacker or defender
