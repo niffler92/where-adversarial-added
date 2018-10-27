@@ -12,7 +12,7 @@ __all__ += ['unet_resnet152', 'unet_vgg19']
 
 
 class Enhancer(nn.Module):
-    def __init__(self, *conv, lambd=1):
+    def __init__(self, conv, lambd=1):
         super(Enhancer, self).__init__()
         assert len(conv) == 4
         in_channels, out_channels, kernel_size, stride = conv
@@ -69,22 +69,22 @@ class EnNet(nn.Module):
 
 
 def ace_ResNet18(args, **kwargs):
-    return EnNet(ResNet18(args, **kwargs), Enhancer(3,3,3,2, lambd=args.lambd), args, **kwargs)
+    return EnNet(ResNet18(args, **kwargs), Enhancer((3,3,3,2), lambd=args.lambd), args, **kwargs)
 
 def ace_Vgg11(args, **kwargs):
-    return EnNet(Vgg11(args, **kwargs), Enhancer(3,3,3,2, lambd=args.lambd), args, **kwargs)
+    return EnNet(Vgg11(args, **kwargs), Enhancer((3,3,3,2), lambd=args.lambd), args, **kwargs)
 
 def ace_ResNet152(args, **kwargs):
-    return EnNet(ResNet152(args, **kwargs), Enhancer(3,3,3,2,lambd=args.lambd), args, **kwargs)
+    return EnNet(ResNet152(args, **kwargs), Enhancer((3,3,3,2),lambd=args.lambd), args, **kwargs)
 
 def ace_Vgg19(args, **kwargs):
-    return EnNet(Vgg19(args, **kwargs), Enhancer(3,3,3,2,lambd=args.lambd), args, **kwargs)
+    return EnNet(Vgg19(args, **kwargs), Enhancer((3,3,3,2),lambd=args.lambd), args, **kwargs)
 
 
 # Enhanced Autoencoder Networks
 class AENet(nn.Module):
     def __init__(self, autoencoder, net, args, **kwargs):
-        super().__init__()
+        super(AENet).__init__()
         self.autoencoder = autoencoder
         self.net = net
         self.args = args

@@ -30,7 +30,8 @@ class Logger:
         logger.setLevel(verbose)
 
         if log_dir is not None:
-            log_dir.mkdir(parents=True, exist_ok=True)
+            if not log_dir.exists():
+                log_dir.mkdir(parents=True)
             log_dir = str(log_dir)
             fileHandler = logging.FileHandler(log_dir +
                                               '/{}.'.format(name) + datetime.now().strftime("%Y%m%d%H%M%S"),

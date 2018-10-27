@@ -85,7 +85,7 @@ def get_loader(
 
 class MNIST(datasets.MNIST):
     def __init__(self, root, train, download=True):
-        super().__init__(root, train=train, download=download)
+        super(MNIST, self).__init__(root, train=train, download=download)
 
     def preprocess(self):
         mean, std = data_stats("MNIST")
@@ -98,7 +98,7 @@ class MNIST(datasets.MNIST):
 
 class CIFAR10(datasets.CIFAR10):
     def __init__(self, root, train, download=True):
-        super().__init__(root, train=train, download=download)
+        super(CIFAR10, self).__init__(root, train=train, download=download)
 
     def preprocess(self):
         mean, std = data_stats("CIFAR10")

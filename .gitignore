@@ -1,3 +1,9 @@
+# Build for standalone executable
+*.egg-info/
+build/
+dist/
+*.pyc
+
 experiments/
 checkpoints/
 __pycache__/

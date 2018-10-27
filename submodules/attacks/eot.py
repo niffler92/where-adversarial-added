@@ -5,7 +5,6 @@ import numpy as np
 
 from dataloader import normalize, denormalize
 from common.torch_utils import get_optimizer, to_var
-from submodules import attacks, defenses
 
 __all__ = ['eot']
 
@@ -19,6 +18,7 @@ class EOT:
             defense (str): type of defense to conduct expectation on
             nsamples (int): Number of samples to ensemble
         """
+        from submodules import attacks, defenses
         assert attack in dir(attacks)
         assert defense in dir(defenses)
         self.model = model

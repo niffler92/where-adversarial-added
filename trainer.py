@@ -14,10 +14,10 @@ from settings import PROJECT_ROOT, SAVE_DIR
 from common.logger import Logger
 from common.torch_utils import to_np, get_optimizer, get_model
 from common.summary import EvaluationMetrics
-from submodules import attacks
+import submodules.attacks as attacks
 
 
-class Trainer:
+class Trainer(object):
     """ Train and Validation with single GPU """
     def __init__(self, train_loader, val_loader, args):
         self.train_loader = train_loader
@@ -39,7 +39,7 @@ class Trainer:
                 ).as_posix()
         self.log_path = Path(self.get_dirname(self.log_path, args))
         if not Path.exists(self.log_path):
-            Path(self.log_path).mkdir(parents=True, exist_ok=True)
+            Path(self.log_path).mkdir(parents=True)
         self.logger = Logger("train", self.log_path, args.verbose)
         self.logger.log("Checkpoint files will be saved in {}".format(self.log_path))
 
@@ -165,7 +165,7 @@ class Trainer:
 
     def save(self, filename=None):
         if filename is None:
-            filename = os.path.join(self.log_path, 'model-{}.pth'.format(self.epoch))
+            filename = os.path.join(str(self.log_path), 'model-{}.pth'.format(self.epoch))
         torch.save({
             'model': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
@@ -230,7 +230,7 @@ class Trainer:
 
 class AdvTrainer(Trainer):
     def __init__(self, train_loader, val_loader, args):
-        super().__init__(train_loader, val_loader, args)
+        super(AdvTrainer, self).__init__(train_loader, val_loader, args)
         self.kwargs = {}
         self.alpha = args.alpha
         self.attacker = getattr(attacks, self.args.attack)(self.model, self.args, **self.kwargs)
@@ -298,7 +298,7 @@ class AdvTrainer(Trainer):
 
 class AETrainer(Trainer):
     def __init__(self, train_loader, val_loader, args):
-        super().__init__(train_loader, val_loader, args)
+        super(AETrainer, self).__init__(train_loader, val_loader, args)
         self.best_loss = np.inf
         self.criterion = nn.MSELoss()
         if self.args.cuda:

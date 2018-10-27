@@ -1,3 +1,5 @@
+#-*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals, absolute_import, division
 import sys
 import os
 sys.path.append("../")
@@ -118,7 +120,7 @@ if __name__ == '__main__':
                         "The model must be saved in the checkpoint directory.")
     parser.add_argument("--ckpt_name", type=str, default=None)
 
-    parser.add_argument("--optimizer", default="SGD", type=str.lower,
+    parser.add_argument("--optimizer", default="sgd", type=lambda s: s.encode('utf8').lower(),
                         choices=['sgd', 'adam', 'rmsprop', 'sgd_nn', 'adadelta'])
     parser.add_argument('--momentum', default=0.9, type=float, metavar='M', help='momentum')
     parser.add_argument('--epochs', default=100, type=int, metavar='N',

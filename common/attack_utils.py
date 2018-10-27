@@ -34,10 +34,9 @@ def get_gradient(sample, label, model):
     if hasattr(model, 'grad'):
         model.set_grad()
     else:
-        x_grad  = None
+        x = {'grad': None}
         def hook_nonleaf_grad(grad):
-            nonlocal x_grad
-            x_grad = grad
+            x['grad'] = grad
         sample.register_hook(hook_nonleaf_grad)
 
     out = model(sample)

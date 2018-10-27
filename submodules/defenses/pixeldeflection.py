@@ -136,7 +136,7 @@ class PixelDeflection:
         _, nc, h, w = features.shape
         cams = []
         for label in range(self.args.num_classes):
-            cam = weights[label]@features.view(nc, h*w)
+            cam = np.dot(weights[label], features.view(nc, h*w))
             cam = cam.view(h, w)
             cam = (cam - torch.min(cam))/(torch.max(cam) - torch.min(cam))
             cam = cam.view(1,1,*cam.shape)

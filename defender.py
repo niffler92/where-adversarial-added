@@ -39,7 +39,7 @@ class Defender(Trainer):
                 ).as_posix()
         self.log_path = Path(self.get_dirname(self.log_path, args))
         if not Path.exists(self.log_path):
-            Path(self.log_path).mkdir(parents=True, exist_ok=True)
+            Path(self.log_path).mkdir(parents=True)
         self.logger = Logger("defense", self.log_path, args.verbose)
         self.logger.log("Checkpoint files will be saved in {}".format(self.log_path))
 

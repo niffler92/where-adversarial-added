@@ -101,7 +101,8 @@ class OnePixel:
         pixs = np.array(np.split(pixs, self.n_pix))
 
         if pixs.ndim == 2:
-            pixs = pixs.reshape(*pixs.shape,1)
+            (dim1, dim2) = pixs.shape
+            pixs = pixs.reshape(dim1, dim2, 1)
         else:
             adv_images = adv_images.repeat(self.popsize,1,1,1)
 
