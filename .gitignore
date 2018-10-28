@@ -3,6 +3,9 @@
 build/
 dist/
 *.pyc
+*.pyx
+*.c
+*.std*
 
 experiments/
 checkpoints/
