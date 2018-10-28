@@ -27,7 +27,6 @@ class VGG(nn.Module):
         else:
             raise NotImplementedError
 
-        self.activation = args.activation
         self.args = args
         self.kwargs = kwargs
         self.features = self.make_layers(cfg)

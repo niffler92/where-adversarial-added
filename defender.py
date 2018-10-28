@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from settings import PROJECT_ROOT
+from settings import PROJECT_ROOT, SAVE_DIR
 from common.logger import Logger
 from common.torch_utils import to_np, to_var, get_optimizer, get_model
 from common.attack_utils import get_artifact
@@ -34,7 +34,7 @@ class Defender(Trainer):
         self.cuda = self.args.cuda
 
         self.log_path = (
-                PROJECT_ROOT / Path("experiments") /
+                PROJECT_ROOT / Path(SAVE_DIR) /
                 Path(datetime.now().strftime("%Y%m%d%H%M%S") + "-")
                 ).as_posix()
         self.log_path = Path(self.get_dirname(self.log_path, args))

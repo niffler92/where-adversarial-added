@@ -158,8 +158,8 @@ class Trainer(object):
         self.logger.scalar_summary(eval_metrics.avg, self.step, 'EVAL')
 
     def get_dirname(self, path, args):
-        path += "{}-".format(getattr(args, 'dataset'))
-        path += "{}-".format(getattr(args, 'seed'))
+        path += "{}-".format(getattr(args, 'mode'))
+	path += "{}-".format(getattr(args, 'dataset'))
         path += "{}".format(getattr(args, 'model'))
         return path
 
