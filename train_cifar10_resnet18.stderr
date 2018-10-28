@@ -1,0 +1,72 @@
+[common|INFO] 2018-10-28 20:20:25,987 > [32mTraining start![0m
+[train|INFO] 2018-10-28 20:20:30,115 > [32mCheckpoint files will be saved in /home/user327/experiments/20181028202030-CIFAR10-500-ResNet18[0m
+[train|INFO] 2018-10-28 20:20:33,377 > [32mSaving best model: epoch=0[0m
+[train|EVAL] 2018-10-28 20:20:33,379 > [33mStep:     0 | Loss: 2.3139 | Acc: 0.1001 | Time: 0.0215[0m
+[train|STEP] 2018-10-28 20:20:37,921 > [32mStep:    50 | Loss: 1.4938 | Acc: 0.4141 | Time: 0.0226[0m
+[train|STEP] 2018-10-28 20:20:42,333 > [32mStep:   100 | Loss: 1.5303 | Acc: 0.4375 | Time: 0.0227[0m
+[train|STEP] 2018-10-28 20:20:46,762 > [32mStep:   150 | Loss: 1.3459 | Acc: 0.5000 | Time: 0.0225[0m
+[train|STEP] 2018-10-28 20:20:51,196 > [32mStep:   200 | Loss: 1.3694 | Acc: 0.4688 | Time: 0.0272[0m
+[train|STEP] 2018-10-28 20:20:55,629 > [32mStep:   250 | Loss: 1.1792 | Acc: 0.5312 | Time: 0.0217[0m
+[train|STEP] 2018-10-28 20:21:00,062 > [32mStep:   300 | Loss: 1.2995 | Acc: 0.5234 | Time: 0.0267[0m
+[train|STEP] 2018-10-28 20:21:04,501 > [32mStep:   350 | Loss: 1.1687 | Acc: 0.5625 | Time: 0.0225[0m
+[train|EPOCH] 2018-10-28 20:21:12,412 > [36mStep:   390 | Loss: 1.4365 | Acc: 0.4792 | Time: 0.0231[0m
+[train|INFO] 2018-10-28 20:21:14,549 > [32mSaving best model: epoch=1[0m
+[train|EVAL] 2018-10-28 20:21:14,552 > [33mStep:   390 | Loss: 1.0844 | Acc: 0.6157 | Time: 0.0061[0m
+[train|STEP] 2018-10-28 20:21:15,579 > [32mStep:   400 | Loss: 0.9835 | Acc: 0.6641 | Time: 0.0225[0m
+[train|STEP] 2018-10-28 20:21:20,007 > [32mStep:   450 | Loss: 0.9633 | Acc: 0.6641 | Time: 0.0224[0m
+[train|STEP] 2018-10-28 20:21:24,443 > [32mStep:   500 | Loss: 1.0568 | Acc: 0.6094 | Time: 0.0222[0m
+[train|STEP] 2018-10-28 20:21:28,882 > [32mStep:   550 | Loss: 0.9078 | Acc: 0.6719 | Time: 0.0227[0m
+[train|STEP] 2018-10-28 20:21:33,323 > [32mStep:   600 | Loss: 1.0428 | Acc: 0.6641 | Time: 0.0227[0m
+[train|STEP] 2018-10-28 20:21:37,763 > [32mStep:   650 | Loss: 0.9843 | Acc: 0.6484 | Time: 0.0224[0m
+[train|STEP] 2018-10-28 20:21:42,203 > [32mStep:   700 | Loss: 0.7994 | Acc: 0.6484 | Time: 0.0226[0m
+[train|STEP] 2018-10-28 20:21:46,648 > [32mStep:   750 | Loss: 0.8517 | Acc: 0.7031 | Time: 0.0224[0m
+[train|EPOCH] 2018-10-28 20:21:54,035 > [36mStep:   780 | Loss: 0.9427 | Acc: 0.6676 | Time: 0.0225[0m
+[train|INFO] 2018-10-28 20:21:56,190 > [32mSaving best model: epoch=2[0m
+[train|EVAL] 2018-10-28 20:21:56,192 > [33mStep:   780 | Loss: 0.9982 | Acc: 0.6737 | Time: 0.0059[0m
+[train|STEP] 2018-10-28 20:21:58,123 > [32mStep:   800 | Loss: 0.6515 | Acc: 0.7656 | Time: 0.0217[0m
+[train|STEP] 2018-10-28 20:22:02,565 > [32mStep:   850 | Loss: 0.8121 | Acc: 0.7109 | Time: 0.0226[0m
+[train|STEP] 2018-10-28 20:22:07,009 > [32mStep:   900 | Loss: 0.7433 | Acc: 0.7344 | Time: 0.0225[0m
+[train|STEP] 2018-10-28 20:22:11,452 > [32mStep:   950 | Loss: 0.8767 | Acc: 0.7266 | Time: 0.0217[0m
+[train|STEP] 2018-10-28 20:22:15,903 > [32mStep:  1000 | Loss: 0.7501 | Acc: 0.7422 | Time: 0.0243[0m
+[train|STEP] 2018-10-28 20:22:20,351 > [32mStep:  1050 | Loss: 0.8250 | Acc: 0.7344 | Time: 0.0223[0m
+[train|STEP] 2018-10-28 20:22:24,799 > [32mStep:  1100 | Loss: 0.7294 | Acc: 0.7266 | Time: 0.0226[0m
+[train|STEP] 2018-10-28 20:22:29,249 > [32mStep:  1150 | Loss: 0.5911 | Acc: 0.7891 | Time: 0.0227[0m
+[train|EPOCH] 2018-10-28 20:22:35,405 > [36mStep:  1170 | Loss: 0.7319 | Acc: 0.7441 | Time: 0.0224[0m
+[train|INFO] 2018-10-28 20:22:37,542 > [32mSaving best model: epoch=3[0m
+[train|EVAL] 2018-10-28 20:22:37,545 > [33mStep:  1170 | Loss: 0.7466 | Acc: 0.7525 | Time: 0.0060[0m
+[train|STEP] 2018-10-28 20:22:40,354 > [32mStep:  1200 | Loss: 0.5989 | Acc: 0.8125 | Time: 0.0229[0m
+[train|STEP] 2018-10-28 20:22:44,800 > [32mStep:  1250 | Loss: 0.6648 | Acc: 0.7578 | Time: 0.0217[0m
+[train|STEP] 2018-10-28 20:22:49,246 > [32mStep:  1300 | Loss: 0.5751 | Acc: 0.7734 | Time: 0.0227[0m
+[train|STEP] 2018-10-28 20:22:53,695 > [32mStep:  1350 | Loss: 0.7058 | Acc: 0.7812 | Time: 0.0223[0m
+[train|STEP] 2018-10-28 20:22:58,147 > [32mStep:  1400 | Loss: 0.7450 | Acc: 0.7422 | Time: 0.0227[0m
+[train|STEP] 2018-10-28 20:23:02,598 > [32mStep:  1450 | Loss: 0.6629 | Acc: 0.7891 | Time: 0.0227[0m
+[train|STEP] 2018-10-28 20:23:07,049 > [32mStep:  1500 | Loss: 0.6174 | Acc: 0.7656 | Time: 0.0223[0m
+[train|STEP] 2018-10-28 20:23:11,501 > [32mStep:  1550 | Loss: 0.4801 | Acc: 0.8203 | Time: 0.0217[0m
+[train|EPOCH] 2018-10-28 20:23:16,826 > [36mStep:  1560 | Loss: 0.6234 | Acc: 0.7809 | Time: 0.0223[0m
+[train|INFO] 2018-10-28 20:23:18,947 > [32mSaving best model: epoch=4[0m
+[train|EVAL] 2018-10-28 20:23:18,950 > [33mStep:  1560 | Loss: 0.6906 | Acc: 0.7709 | Time: 0.0059[0m
+[train|STEP] 2018-10-28 20:23:22,649 > [32mStep:  1600 | Loss: 0.5041 | Acc: 0.8047 | Time: 0.0217[0m
+[train|STEP] 2018-10-28 20:23:27,097 > [32mStep:  1650 | Loss: 0.5330 | Acc: 0.8203 | Time: 0.0218[0m
+[train|STEP] 2018-10-28 20:23:31,548 > [32mStep:  1700 | Loss: 0.5044 | Acc: 0.8359 | Time: 0.0262[0m
+[train|STEP] 2018-10-28 20:23:35,999 > [32mStep:  1750 | Loss: 0.4442 | Acc: 0.8125 | Time: 0.0224[0m
+[train|STEP] 2018-10-28 20:23:40,452 > [32mStep:  1800 | Loss: 0.5828 | Acc: 0.8203 | Time: 0.0264[0m
+[train|STEP] 2018-10-28 20:23:44,905 > [32mStep:  1850 | Loss: 0.4963 | Acc: 0.8047 | Time: 0.0224[0m
+[train|STEP] 2018-10-28 20:23:49,359 > [32mStep:  1900 | Loss: 0.5365 | Acc: 0.8203 | Time: 0.0273[0m
+[train|STEP] 2018-10-28 20:23:53,806 > [32mStep:  1950 | Loss: 0.4877 | Acc: 0.7969 | Time: 0.0215[0m
+[train|EPOCH] 2018-10-28 20:23:57,974 > [36mStep:  1950 | Loss: 0.5419 | Acc: 0.8111 | Time: 0.0232[0m
+[train|EVAL] 2018-10-28 20:24:00,010 > [33mStep:  1950 | Loss: 0.8247 | Acc: 0.7465 | Time: 0.0060[0m
+[train|STEP] 2018-10-28 20:24:04,624 > [32mStep:  2000 | Loss: 0.5591 | Acc: 0.8125 | Time: 0.0257[0m
+[train|STEP] 2018-10-28 20:24:09,077 > [32mStep:  2050 | Loss: 0.4627 | Acc: 0.8516 | Time: 0.0249[0m
+[train|STEP] 2018-10-28 20:24:13,539 > [32mStep:  2100 | Loss: 0.4148 | Acc: 0.8984 | Time: 0.0252[0m
+[train|STEP] 2018-10-28 20:24:18,001 > [32mStep:  2150 | Loss: 0.4190 | Acc: 0.9062 | Time: 0.0257[0m
+[train|STEP] 2018-10-28 20:24:22,464 > [32mStep:  2200 | Loss: 0.5427 | Acc: 0.8281 | Time: 0.0249[0m
+[train|STEP] 2018-10-28 20:24:26,929 > [32mStep:  2250 | Loss: 0.3851 | Acc: 0.8672 | Time: 0.0247[0m
+[train|STEP] 2018-10-28 20:24:31,394 > [32mStep:  2300 | Loss: 0.4133 | Acc: 0.8516 | Time: 0.0253[0m
+[train|EPOCH] 2018-10-28 20:24:39,506 > [36mStep:  2340 | Loss: 0.4924 | Acc: 0.8286 | Time: 0.0252[0m
+[train|INFO] 2018-10-28 20:24:41,642 > [32mSaving best model: epoch=6[0m
+[train|EVAL] 2018-10-28 20:24:41,645 > [33mStep:  2340 | Loss: 0.5512 | Acc: 0.8148 | Time: 0.0059[0m
+[train|STEP] 2018-10-28 20:24:42,676 > [32mStep:  2350 | Loss: 0.3562 | Acc: 0.8672 | Time: 0.0215[0m
+[train|STEP] 2018-10-28 20:24:47,129 > [32mStep:  2400 | Loss: 0.4179 | Acc: 0.8359 | Time: 0.0227[0m
+[train|STEP] 2018-10-28 20:24:51,589 > [32mStep:  2450 | Loss: 0.4894 | Acc: 0.8203 | Time: 0.0275[0m
+[train|STEP] 2018-10-28 20:24:56,049 > [32mStep:  2500 | Loss: 0.3522 | Acc: 0.8672 | Time: 0.0216[0m
+[train|STEP] 2018-10-28 20:25:00,509 > [32mStep:  2550 | Loss: 0.4495 | Acc: 0.8359 | Time: 0.0269[0m

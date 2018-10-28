@@ -1,0 +1,183 @@
+G: None
+alpha: 0.5
+attack: None
+autoencoder: False
+batch_size: 128
+ckpt_ae: None
+ckpt_name: None
+ckpt_src: None
+conv_weight_init: xavier_normal
+cuda: True
+dataset: CIFAR10
+defense: None
+domain_restrict: False
+download: False
+eot_attack: pgd
+eot_iter: 1000
+eot_norm: l2
+epochs: 100
+gamma: 0.1
+half: False
+img_log_step: 20
+lambd: 0
+learning_rate: 0.01
+log_step: 50
+max_iter: 50
+mode: train
+model: ResNet18
+momentum: 0.9
+multigpu: 0
+ndeflection: 200
+no_cuda: False
+nsamples: 30
+num_classes: 10
+optimizer: sgd
+pad_type: replication
+pretrained: False
+random: False
+seed: 500
+sigma: 0.04
+source: None
+start_epoch: 0
+target: None
+verbose: 1
+weight_decay: 0.0005
+window: 10
+workers: 4
+x_coord: 1
+y_coord: 0
+<class 'submodules.models.resnet.ResNet'>
+
+
+    def __init__(self, block, num_blocks, args=None, **kwargs):
+        super(ResNet, self).__init__()
+        self.in_planes = 64
+        if args.dataset == "MNIST":
+            conv_in = 1
+            linear_in = 512
+        else:
+            conv_in = 3
+            if args.dataset in ["CIFAR10", "CIFAR100"]:
+                linear_in = 512
+            elif args.dataset == "TinyImageNet":
+                linear_in = 512*2*2
+            elif args.dataset == "ImageNet":
+                linear_in = 512*7*7
+            else:
+                raise NotImplementedError
+
+        self.conv1 = nn.Conv2d(conv_in, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1, nlayer=0, args=args, **kwargs)
+        self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, nlayer=1, args=args, **kwargs)
+        self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2, nlayer=2, args=args, **kwargs)
+        self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2, nlayer=3, args=args, **kwargs)
+        self.linear = nn.Linear(linear_in*block.expansion, args.num_classes)
+
+        self.activation = nn.ReLU()
+
+        self.grads = {}
+        self.get_grad = False
+        self.endpoints = {}
+
+
+
+    def forward(self, x):
+        out = self.activation(self.bn1(self.conv1(x)))
+        out1 = self.layer1(out)
+        out2 = self.layer2(out1)
+        out3 = self.layer3(out2)
+        out4 = self.layer4(out3)
+        out5 = F.avg_pool2d(out4, 4)
+        out5 = out5.view(out5.size(0), -1)
+        out6 = self.linear(out5)
+
+        if x.requires_grad:
+            x.register_hook(self.save_grad('input'))
+            out.register_hook(self.save_grad('conv1'))
+            out1.register_hook(self.save_grad('block1'))
+            out2.register_hook(self.save_grad('block2'))
+            out3.register_hook(self.save_grad('block3'))
+            out4.register_hook(self.save_grad('block4'))
+
+            self.endpoints['input'] = x
+            self.endpoints['conv1'] = out
+            self.endpoints['block1'] = out1
+            self.endpoints['block2'] = out2
+            self.endpoints['block3'] = out3
+            self.endpoints['block4'] = out4
+
+        return out6
+
+
+
+****************************************  ResNet18*********************************************
+****************************************PARAM INFO*********************************************
+-----------------------------------------------------------------------------------------------
+|                               Param Name |                     Shape |     Number of Params |
+-----------------------------------------------------------------------------------------------
+|                             conv1.weight |         [64L, 3L, 3L, 3L] |                 1728 |
+|                               bn1.weight |                     [64L] |                   64 |
+|                                 bn1.bias |                     [64L] |                   64 |
+|                    layer1.0.conv1.weight |        [64L, 64L, 3L, 3L] |                36864 |
+|                      layer1.0.bn1.weight |                     [64L] |                   64 |
+|                        layer1.0.bn1.bias |                     [64L] |                   64 |
+|                    layer1.0.conv2.weight |        [64L, 64L, 3L, 3L] |                36864 |
+|                      layer1.0.bn2.weight |                     [64L] |                   64 |
+|                        layer1.0.bn2.bias |                     [64L] |                   64 |
+|                    layer1.1.conv1.weight |        [64L, 64L, 3L, 3L] |                36864 |
+|                      layer1.1.bn1.weight |                     [64L] |                   64 |
+|                        layer1.1.bn1.bias |                     [64L] |                   64 |
+|                    layer1.1.conv2.weight |        [64L, 64L, 3L, 3L] |                36864 |
+|                      layer1.1.bn2.weight |                     [64L] |                   64 |
+|                        layer1.1.bn2.bias |                     [64L] |                   64 |
+|                    layer2.0.conv1.weight |       [128L, 64L, 3L, 3L] |                73728 |
+|                      layer2.0.bn1.weight |                    [128L] |                  128 |
+|                        layer2.0.bn1.bias |                    [128L] |                  128 |
+|                    layer2.0.conv2.weight |      [128L, 128L, 3L, 3L] |               147456 |
+|                      layer2.0.bn2.weight |                    [128L] |                  128 |
+|                        layer2.0.bn2.bias |                    [128L] |                  128 |
+|               layer2.0.shortcut.0.weight |       [128L, 64L, 1L, 1L] |                 8192 |
+|               layer2.0.shortcut.1.weight |                    [128L] |                  128 |
+|                 layer2.0.shortcut.1.bias |                    [128L] |                  128 |
+|                    layer2.1.conv1.weight |      [128L, 128L, 3L, 3L] |               147456 |
+|                      layer2.1.bn1.weight |                    [128L] |                  128 |
+|                        layer2.1.bn1.bias |                    [128L] |                  128 |
+|                    layer2.1.conv2.weight |      [128L, 128L, 3L, 3L] |               147456 |
+|                      layer2.1.bn2.weight |                    [128L] |                  128 |
+|                        layer2.1.bn2.bias |                    [128L] |                  128 |
+|                    layer3.0.conv1.weight |      [256L, 128L, 3L, 3L] |               294912 |
+|                      layer3.0.bn1.weight |                    [256L] |                  256 |
+|                        layer3.0.bn1.bias |                    [256L] |                  256 |
+|                    layer3.0.conv2.weight |      [256L, 256L, 3L, 3L] |               589824 |
+|                      layer3.0.bn2.weight |                    [256L] |                  256 |
+|                        layer3.0.bn2.bias |                    [256L] |                  256 |
+|               layer3.0.shortcut.0.weight |      [256L, 128L, 1L, 1L] |                32768 |
+|               layer3.0.shortcut.1.weight |                    [256L] |                  256 |
+|                 layer3.0.shortcut.1.bias |                    [256L] |                  256 |
+|                    layer3.1.conv1.weight |      [256L, 256L, 3L, 3L] |               589824 |
+|                      layer3.1.bn1.weight |                    [256L] |                  256 |
+|                        layer3.1.bn1.bias |                    [256L] |                  256 |
+|                    layer3.1.conv2.weight |      [256L, 256L, 3L, 3L] |               589824 |
+|                      layer3.1.bn2.weight |                    [256L] |                  256 |
+|                        layer3.1.bn2.bias |                    [256L] |                  256 |
+|                    layer4.0.conv1.weight |      [512L, 256L, 3L, 3L] |              1179648 |
+|                      layer4.0.bn1.weight |                    [512L] |                  512 |
+|                        layer4.0.bn1.bias |                    [512L] |                  512 |
+|                    layer4.0.conv2.weight |      [512L, 512L, 3L, 3L] |              2359296 |
+|                      layer4.0.bn2.weight |                    [512L] |                  512 |
+|                        layer4.0.bn2.bias |                    [512L] |                  512 |
+|               layer4.0.shortcut.0.weight |      [512L, 256L, 1L, 1L] |               131072 |
+|               layer4.0.shortcut.1.weight |                    [512L] |                  512 |
+|                 layer4.0.shortcut.1.bias |                    [512L] |                  512 |
+|                    layer4.1.conv1.weight |      [512L, 512L, 3L, 3L] |              2359296 |
+|                      layer4.1.bn1.weight |                    [512L] |                  512 |
+|                        layer4.1.bn1.bias |                    [512L] |                  512 |
+|                    layer4.1.conv2.weight |      [512L, 512L, 3L, 3L] |              2359296 |
+|                      layer4.1.bn2.weight |                    [512L] |                  512 |
+|                        layer4.1.bn2.bias |                    [512L] |                  512 |
+|                            linear.weight |               [10L, 512L] |                 5120 |
+|                              linear.bias |                     [10L] |                   10 |
+-----------------------------------------------------------------------------------------------
+Total Params: 11173962
+***********************************************************************************************

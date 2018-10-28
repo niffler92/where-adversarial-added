@@ -1,6 +1,6 @@
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent
-DATA_DIR = "./data"         # Directory to save downloaded dataset
-SAVE_DIR = "./experiments"  # Directory to save trained models
-LOAD_DIR = "./checkpoints"  # Directory to load pretrained checkpoints
+PROJECT_ROOT = Path('/home/user327/ACE-Defense')
+DATA_DIR = "/scratch/user327/data"         # Directory to save downloaded dataset
+SAVE_DIR = "/home/user327/experiments"  # Directory to save trained models
+LOAD_DIR = "/home/user327/checkpoints"  # Directory to load pretrained checkpoints

@@ -1,5 +1,15 @@
 import os
 import torch
+try:
+    torch._utils._rebuild_tensor_v2
+except:
+    def _rebuild_tensor_v2(storage, storage_offset, size, stride, requires_grad, backward_hooks):
+        tensor = torch._utils._rebuild_tensor(storage, storage_offset, size, stride)
+        tensor.requires_grad = requires_grad
+        tensor._backward_hooks = backward_hooks
+	return tensor
+    torch._utils._rebuild_tensor_v2 = _rebuild_tensor_v2
+
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.autograd import Variable
@@ -66,13 +76,14 @@ def get_loader(
         dataset='CIFAR10',
         root=DATA_DIR,
         batch_size=128,
-        num_workers=4
+        num_workers=4,
+	download=False
         ):
 
     assert dataset in ['CIFAR10', 'CIFAR100', 'MNIST', 'ImageNet', 'TinyImageNet'], "Unknown dataset"
 
     train_loader, val_loader = (torch.utils.data.DataLoader(
-        globals()[dataset](root=root, train=is_training).preprocess(),
+        globals()[dataset](root=root, train=is_training, download=download).preprocess(),
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
@@ -84,7 +95,7 @@ def get_loader(
 
 
 class MNIST(datasets.MNIST):
-    def __init__(self, root, train, download=True):
+    def __init__(self, root, train, download=False):
         super(MNIST, self).__init__(root, train=train, download=download)
 
     def preprocess(self):
@@ -97,7 +108,7 @@ class MNIST(datasets.MNIST):
 
 
 class CIFAR10(datasets.CIFAR10):
-    def __init__(self, root, train, download=True):
+    def __init__(self, root, train, download=False):
         super(CIFAR10, self).__init__(root, train=train, download=download)
 
     def preprocess(self):

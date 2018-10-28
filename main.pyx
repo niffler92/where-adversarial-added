@@ -9,6 +9,7 @@ import random
 import json
 
 import torch
+torch.backends.cudnn.enabled = True
 import torchvision.transforms as transforms
 import numpy as np
 
