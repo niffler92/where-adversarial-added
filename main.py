@@ -2,19 +2,16 @@ import sys
 import os
 sys.path.append("../")
 import argparse
-from datetime import datetime
 import random
 import json
 
 import torch
 torch.backends.cudnn.enabled = True
-import torchvision.transforms as transforms
 import numpy as np
 
 from trainer import Trainer, AdvTrainer, AETrainer
 from attacker import Attacker
 from defender import Defender
-from analysis import Analysis
 
 import submodules.models as models
 import submodules.attacks as attacks
@@ -63,12 +60,12 @@ def main(args, scope):
 
     elif args.mode == 'attack':
         logger.log("Attack start!")
-        trainer = Attacker(val_loader, args)
+        trainer = Attacker(train_loader, val_loader, args)
         trainer.show_current_model()
         save, load, infer = get_binds(trainer)
         nsml.bind(save=save, load=load, infer=infer)
 
-        trainer.attack()
+        trainer.generate()
         logger.log("Attack end!")
 
     elif args.mode == 'defense':
@@ -80,15 +77,6 @@ def main(args, scope):
 
         trainer.defend()
         logger.log("Defend end!")
-
-    elif args.mode == 'analysis':
-        logger.log("Analysis start!")
-        trainer = Analysis(val_loader, args)
-        save, load, infer = get_binds(trainer)
-        nsml.bind(save=save, load=load, infer=infer)
-
-        trainer.analysis()
-        logger.log("Analysis end!")
 
     arg_file = os.path.join(str(trainer.log_path), 'args.json')
     with open(arg_file, 'w') as outfile:
@@ -116,7 +104,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Image classification')
 
     # Datasets
-    parser.add_argument('--dataset', default='CIFAR10', type=str,
+    parser.add_argument('--dataset', default='ImageNet', type=str,
                         choices=['MNIST', 'CIFAR10', 'CIFAR100', 'ImageNet', 'TinyImageNet'])
     parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                         help='number of data loading workers (default: 4)')
@@ -181,12 +169,8 @@ if __name__ == '__main__':
     # Adversarial attack settings
     parser.add_argument('--attack', metavar='ATTACK', default=None, choices=attack_names,
                         help='attack algorithm: ' + ' | '.join(attack_names) + ' (default: None)')
-    parser.add_argument('--aggregate', '--ag', default='accdrop', choices=['success', 'accdrop'],
-                        help='the criterion for ensembling several attack algorithms')
     parser.add_argument('--avg_step', default=1, type=int)
-    parser.add_argument('--img_log_step', default=20, type=int)
-    parser.add_argument('--log_artifact', action='store_true',
-                        help="calculate the ratio of perturbation on the artifacts of the network")
+    parser.add_argument('--img_log_step', default=1, type=int)
     parser.add_argument('--target', default=None, type=int,
                         help="None for non-targeted attacks, -1 for least likely attack")
     parser.add_argument('--T', default=None, type=float)
@@ -200,7 +184,7 @@ if __name__ == '__main__':
 
     # nsml setting
     parser.add_argument("--mode", default='train', type=str,
-                        choices=['train', 'attack', 'defense', 'analysis'])
+                        choices=['train', 'attack', 'defense'])
     parser.add_argument("--pause", type=int, default=0)
     parser.add_argument("--iteration", type=str, default='0')
 

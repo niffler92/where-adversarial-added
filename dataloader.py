@@ -3,7 +3,7 @@ import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.autograd import Variable
-from nsml import HAS_DATASET, DATASET_PATH
+from nsml import HAS_DATASET, DATASET_PATH, NSML_NFS_OUTPUT
 
 
 def data_stats(dataset):
@@ -24,8 +24,6 @@ def denormalize(images, dataset, clamp=True):
 
     Returns normalized -> denormalized to [0, 1] scale
     """
-    from common.torch_utils import to_var
-
     mean, std = data_stats(dataset)
     mean, std = torch.FloatTensor(mean), torch.FloatTensor(std)
     if torch.cuda.is_available():
@@ -47,8 +45,6 @@ def normalize(images, dataset):
         images (Variable) - (B, C, H, W)
         dataset (str)
     """
-    from common.torch_utils import to_var
-
     mean, std = data_stats(dataset)
     mean, std = torch.FloatTensor(mean), torch.FloatTensor(std)
     if torch.cuda.is_available():
@@ -69,7 +65,12 @@ def get_loader(
         ):
 
     assert dataset in ['CIFAR10', 'CIFAR100', 'MNIST', 'ImageNet', 'TinyImageNet'], "Unknown dataset"
-    if DATASET_PATH:
+    # XXX: NFS currently only has the ImageNet dataset
+    if NSML_NFS_OUTPUT:
+        assert dataset == 'ImageNet'
+        root = os.path.join(NSML_NFS_OUTPUT, 'data', 'imagenet', 'train')
+
+    elif DATASET_PATH:
         assert HAS_DATASET, "Can't find dataset in nsml. Push or search the dataset"
         root = os.path.join(DATASET_PATH, 'train')
 

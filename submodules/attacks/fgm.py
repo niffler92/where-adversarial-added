@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -16,16 +17,16 @@ class FGM:
         self.norm = norm
         self.target = target
         self.args = args
-        if args.domain_restrict:
-            self.mask = Variable(kwargs.get('artifact'))
-        else:
-            self.mask = 1
+        #if args.domain_restrict:
+        #    self.mask = Variable(kwargs.get('artifact'))
+        #else:
+        self.mask = 1
 
         # TODO : allow other criterions for computing loss
         self.criterion = nn.CrossEntropyLoss()
         if self.args.half: self.criterion.half()
 
-    def generate(self, images, labels):
+    def generate(self, images, labels, **kwargs):
         adv_grad = Variable(images.clone(), requires_grad = True)
         adv_nograd = Variable(images.clone())
         adv_images = adv_grad*self.mask + adv_nograd*(1-self.mask)
@@ -67,6 +68,16 @@ class FGM:
             adv_nograd = Variable(adv_images.clone())
             adv_images = adv_grad*self.mask + adv_nograd*(1-self.mask)
 
+            logger = kwargs.get('logger')
+            if logger is not None:
+                for idx, img in enumerate(adv_images):
+                    img_no = kwargs.get('batch_no')*self.args.batch_size + idx
+                    save_dir = os.path.join(kwargs.get('save_dir'), str(img_no))
+                    step = kwargs.get('step')
+
+                    if (i + 1) % 100 == 0:
+                        logger.image_summary({i + 1: img}, step, save_dir)
+
         return adv_images.data, labels
 
 
@@ -89,7 +100,7 @@ def pgd(model, args, **kwargs):
     return FGM(model, max_iter=1000, alpha=0.1, max_clip=0.031, norm='Linf', target=args.target, args=args, **kwargs)
 
 def pgd_carlini(model, args, **kwargs):
-    return FGM(model, max_iter=1000, alpha=0.1, max_clip=0.031, norm='L2', target=args.target, args=args, **kwargs)
+    return FGM(model, max_iter=10000, alpha=0.1, max_clip=0.031, norm='L2', target=args.target, args=args, **kwargs)
 
 def ilcm(model, args, **kwargs):
     return FGM(model, max_iter=100, alpha=1, target='LL', args=args, **kwargs)

@@ -1,17 +1,15 @@
-import os
 from argparse import Namespace
 from collections import OrderedDict
-import re
+import os
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 import nsml
+from nsml import NSML_NFS_OUTPUT
 
 from common.utils import get_checkpoint
-from settings import PROJECT_ROOT
 from dataloader import get_loader
 
 
@@ -72,7 +70,7 @@ def get_model(args):
     pretrained = args.pretrained
     autoencoder = False
 
-    #FIXME: give attr for autoencoder networks
+    # FIXME: give attr for autoencoder networks
     if 'segnet' in args.model or 'unet' in args.model:
         autoencoder = True
 
@@ -95,7 +93,22 @@ def get_model(args):
 
     if pretrained and args.dataset == 'ImageNet' and not autoencoder:
         import torchvision.models as models
-        model = getattr(models, args.model)(pretrained=True)
+
+        # XXX: load checkpoint from NFS
+        if NSML_NFS_OUTPUT:
+            model = getattr(models, args.model)(pretrained=False)
+            path = os.path.join(NSML_NFS_OUTPUT, 'models', 'imagenet')
+
+            ckpt = None
+            for p, _, fs in os.walk(path):
+                for f in fs:
+                    if args.model + '-' in f:
+                        assert ckpt is None, "There are multiple checkpoints sharing the model name"
+                        ckpt = os.path.join(p, f)
+            ckpt = torch.load(ckpt, map_location=lambda storage, loc: storage)
+            model.load_state_dict(ckpt)
+        else:
+            model = getattr(models, args.model)(pretrained=True)
 
     else:
         import submodules.models as models

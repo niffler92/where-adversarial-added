@@ -1,6 +1,4 @@
 import logging
-from collections import Iterable, OrderedDict
-from pathlib import Path
 import os
 from datetime import datetime
 
@@ -9,6 +7,8 @@ import visdom
 from tensorboardX import SummaryWriter
 from termcolor import colored
 import torch
+from torch.autograd import Variable
+
 import numpy as np
 #import seaborn as sns
 from PIL import Image
@@ -76,36 +76,33 @@ class Logger:
         self.n_logger.scalar_summary(info, step)
         self.t_logger.scalar_summary(info, step)
 
-    def image_summary(self, info, step, save=True):
+    def image_summary(self, info, step, save_dir=None):
         """Plot images to NSML and Tensorboard.
            The images are assumed to be of shape (C, W, H),
            with RGB values in range [0,1].
         """
         assert isinstance(info, dict), "data must be a dictionary"
-        self.check_savedir()
+        assert save_dir, "no save_dir"
+
+        self.check_savedir(save_dir)
         for k, img in info.items():
+            if isinstance(img, Variable):
+                img = img.data
+            img = img.cpu().numpy()
             assert len(img.shape) == 3, "image must be a 3D array (C, H, W)"
-            if not isinstance(img, np.ndarray):
-                try:
-                    img = np.reshape(np.asarray(img), list(img.shape))
-                    info[k] = img
-                    assert len(info[k]) == 3, "image must be a 3D array (C, H, W)"
-                except:
-                    raise TypeError("image must be an array-like instance")
-            if save:
-                # Save as Numpy array
-                np.save(self.log_dir + '/numpy/' + k, img)
+            np.save(os.path.join(self.log_dir, save_dir, 'numpy', str(k)), img)
 
-                # Save as PNG file
-                img = np.transpose(img, [1,2,0])
-                if img.shape[-1] == 3:
-                    img = Image.fromarray(img, 'RGB')
-                else:
-                    img = Image.fromarray(img, 'RGBA')
-                img.save(self.log_dir + '/image/' + k + '.png')
+            # Save as PNG file
+            img = np.transpose(img, [1, 2, 0])
+            if img.shape[-1] == 3:
+                img = Image.fromarray(img, 'RGB')
+            else:
+                img = Image.fromarray(img, 'RGBA')
+            img.save(os.path.join(self.log_dir, save_dir, 'image', str(k) + '.png'))
 
-        self.n_logger.image_summary(info, step)
-        self.t_logger.image_summary(info, step)
+        # FIXME: temporarily remove image_summary
+        # self.n_logger.image_summary(info, step)
+        # self.t_logger.image_summary(info, step)
 
     def histo_summary(self, info, step):
         raise NotImplementedError
@@ -133,12 +130,17 @@ class Logger:
         #                fname="{}/image/{}.png".format(self.log_dir, k)
         #                )
 
-    def check_savedir(self):
+    def check_savedir(self, save_dir=None):
         if self.log_dir:
-            if not os.path.exists(self.log_dir + '/numpy/'):
-                os.makedirs(self.log_dir + '/numpy/')
-            if not os.path.exists(self.log_dir + '/image/'):
-                os.makedirs(self.log_dir + '/image/')
+            if save_dir is not None:
+                log_dir = os.path.join(self.log_dir, save_dir)
+            else:
+                log_dir = self.log_dir
+
+            if not os.path.exists(log_dir + '/numpy/'):
+                os.makedirs(log_dir + '/numpy/')
+            if not os.path.exists(log_dir + '/image/'):
+                os.makedirs(log_dir + '/image/')
 
     def get_level_color(self, level):
         assert isinstance(level, str)
