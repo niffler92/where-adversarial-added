@@ -58,14 +58,19 @@ def get_gradient(sample, label, model):
 
 
 def init_rf(model):
-    # TODO: now this works only for ResNet, and our toy model
-    scale = 0.01
+    # FIXME: Temporary fix only for ResNet
+    scale = 0.1
+    is_bottleneck = "bottleneck" in str(model.modules().__next__()).lower()
     for m in model.modules():
         if hasattr(m, "weight"):
             m.weight.data = torch.ones_like(m.weight).data*scale
             # check if shortcut
-            if getattr(m, "kernel_size", lambda: None) == (1,1):
-                m.weight.data = m.weight.data#*scale*(10/1)
+            ks = getattr(m, "kernel_size", lambda: None)
+            s = getattr(m, "stride", lambda: None)
+            if ks == (1,1) and s == (2,2):
+                m.weight.data *= scale
+                if is_bottleneck:
+                    m.weight.data *= scale
         if hasattr(m, "bias"):
             if m.bias is not None:
                 m.bias.data.zero_()
@@ -96,49 +101,20 @@ def get_rf(model, images, args):
     out.backward(torch.ones_like(out))
 
     grad = torch.mean(torch.abs(model_rf.grads['input']), dim=1)
-    grad = torch.mean(grad, dim=0).data
-    grad /= torch.max(grad)
+    #grad = torch.mean(grad, dim=0).data
+    #grad /= torch.max(grad)
 
     return grad
 
 
 def get_artifact(model, dataloader, args):
     images, _ = iter(dataloader).next()
-    if args.mode == 'analysis':
-        width, height = images.shape[2:]
-        if 'conv32' in args.model:
-            artifact = get_cb_grid(width, height, 3, 2)
-        elif 'conv75' in args.model:
-            artifact = get_cb_grid(width, height, 7, 5)
-        elif 'segnet' in args.model:
-            artifact = get_cb_grid(width, height, 1, 2, padding=1)
-        else:
-            artifact = get_cb_grid(width, height, 1, 2)
+    artifact = get_rf(model, images, args)
+    artifact = (artifact - torch.min(artifact))/(torch.max(artifact) - torch.min(artifact))
 
-        artifact = torch.FloatTensor(artifact)
-        if args.cuda:
-            artifact = artifact.cuda()
-
-    else:
-        artifact = get_rf(model, images, args)
-        artifact = (artifact - torch.min(artifact))/(torch.max(artifact) - torch.min(artifact))
-        from common.logger import Logger
-        logger = Logger('analysis')
-        logger.heatmap_summary({'overlaps': artifact}, 0, False)
-        raise
-
-        k = np.prod(artifact.shape)*args.T - 1
-        k = int(k)*(k > 0)
-        topk = torch.sort(artifact.view(-1), descending=True)[0][k]
-        artifact = (artifact > topk).float()
-
-        checkerboard = get_cb_grid(224, 224, 1, 2, padding=0)
-        checkerboard = torch.FloatTensor(checkerboard)
-        if args.cuda:
-            checkerboard = checkerboard.cuda()
-
-        intersection = (artifact.byte()*checkerboard.byte()).float()
-        print(torch.sum(intersection)/torch.sum(checkerboard))
-
+    k = np.prod(artifact.shape)*args.G - 1
+    k = int(k)*(k > 0)
+    topk = torch.sort(artifact.view(-1), descending=True)[0][k]
+    artifact = (artifact > topk).float()
 
     return artifact
