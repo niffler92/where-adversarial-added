@@ -3,6 +3,7 @@ from collections import OrderedDict
 from argparse import Namespace
 
 import torch
+import torch.nn as nn
 import numpy as np
 
 from nsml import DATASET_PATH, NSML_NFS_OUTPUT

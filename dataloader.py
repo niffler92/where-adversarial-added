@@ -1,4 +1,6 @@
 import os
+from PIL import Image
+
 import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
@@ -6,7 +8,7 @@ import torchvision.transforms as transforms
 from settings import PROJECT_ROOT
 from nsml import HAS_DATASET, DATASET_PATH, NSML_NFS_OUTPUT
 
-__all__ = ['MNIST', 'CIFAR10', 'CIFAR100', 'ImageNet', 'TinyImageNet']
+__all__ = ['MNIST', 'CIFAR10', 'CIFAR100', 'ImageNet', 'TinyImageNet', 'COCO']
 
 
 def data_stats(dataset):
@@ -115,7 +117,6 @@ class CIFAR100(CIFAR10):
     train_list = [
         ['train', '16019d7e3df5f24257cddd939b257f8d'],
     ]
-
     test_list = [
         ['test', 'f0ef6b0ae62326f3e7ffdfab6717acfc'],
     ]
@@ -190,6 +191,43 @@ class TinyImageNet(datasets.ImageFolder):
                             ])
         else:
             self.transform = transforms.Compose([
+                                transforms.ToTensor(),
+                                normalize,
+                            ])
+        return self
+
+
+class COCO(torch.utils.data.Dataset):
+    def __init__(self, root, train, download=False):
+        root = os.path.join(root, 'images', 'trainval35k')
+        self.train = train
+        self.image_paths = list(map(lambda x: os.path.join(root, x), os.listdir(root)))
+
+    def __getitem__(self, index):
+        image_path = self.image_paths[index]
+        image = Image.open(image_path).convert("RGB")
+        image = self.transform(image)
+        label_fake = torch.zeros(1)
+        return image, label_fake
+    
+    def __len__(self):
+        return len(self.image_paths)
+
+
+    def preprocess(self):
+        mean, std = data_stats("ImageNet")
+        normalize = transforms.Normalize(mean=mean, std=std)
+        if self.train:
+            self.transform = transforms.Compose([
+                                transforms.RandomResizedCrop(224),
+                                transforms.RandomHorizontalFlip(),
+                                transforms.ToTensor(),
+                                normalize,
+                            ])
+        else:
+            self.transform = transforms.Compose([
+                                transforms.Resize(256),
+                                transforms.CenterCrop(224),
                                 transforms.ToTensor(),
                                 normalize,
                             ])

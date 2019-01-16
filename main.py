@@ -107,6 +107,6 @@ if __name__ == '__main__':
     elif args.dataset == "ImageNet":
         args.num_classes = 1000
     else:
-        raise NotImplementedError
+        args.num_classes = None
 
     main(args, scope=locals())

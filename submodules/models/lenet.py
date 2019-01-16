@@ -16,9 +16,9 @@ class LeNet_toy(nn.Module):
             if args.dataset in ["CIFAR10", "CIFAR100"]:
                 linear_in = 1600
             elif args.dataset == "TinyImageNet":
-                linear_in = 1600*2*2
+                linear_in = 10816
             elif args.dataset == "ImageNet":
-                linear_in = 1600*7*7
+                linear_in = 179776
             else:
                 raise NotImplementedError
 
