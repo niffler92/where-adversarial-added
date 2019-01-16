@@ -6,9 +6,8 @@ from torch.nn import init
 import numpy as np
 
 from dataloader import data_stats
-from common.torch_utils import to_var
 
-__all__ = ['unet']
+__all__ = ['unet', 'unet_mnist']
 
 
 def conv3x3(in_channels, out_channels, stride=1,
@@ -152,10 +151,6 @@ class UNet(nn.Module):
                 upsampling.
         """
         super(UNet, self).__init__()
-        self.std = to_var(torch.FloatTensor(data_stats(args.dataset)[1]))
-        self.std = self.std.view(1,-1,1,1)
-        self.eps = args.eps
-
         if up_mode in ('transpose', 'upsample'):
             self.up_mode = up_mode
         else:
@@ -232,3 +227,6 @@ class UNet(nn.Module):
 
 def unet(args, **kwargs):
     return UNet(args=args, **kwargs)
+
+def unet_mnist(args, **kwargs):
+    return UNet(in_channels=1, depth=2, args=args, **kwargs)

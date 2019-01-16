@@ -8,7 +8,6 @@ import torch.nn as nn
 from torch.nn import Sequential
 import torch.nn.init as init
 
-from submodules.activation import get_activation, CustomNorm2d
 
 __all__ = ['Vgg11', 'Vgg13', 'Vgg16', 'Vgg19']
 
@@ -19,11 +18,6 @@ class VGG(nn.Module):
     '''
     def __init__(self, cfg, args=None, **kwargs):
         super(VGG, self).__init__()
-        self.activation = args.activation
-        self.args = args
-        self.kwargs = kwargs
-        self.features = self.make_layers(cfg)
-
         if args.dataset in ["CIFAR10", "CIFAR100"]:
             linear_in = 512
         elif args.dataset == "TinyImageNet":
@@ -32,13 +26,19 @@ class VGG(nn.Module):
             linear_in = 512*7*7
         else:
             raise NotImplementedError
+
+        self.activation = args.activation
+        self.args = args
+        self.kwargs = kwargs
+        self.features = self.make_layers(cfg)
+
         self.classifier = Sequential(
-            nn.Dropout(args.dropout),
+            nn.Dropout(0),
             nn.Linear(linear_in, 512),
-            get_activation(self.activation, 'fc1', args, **kwargs),
-            nn.Dropout(args.dropout),
+            nn.ReLU(),
+            nn.Dropout(0),
             nn.Linear(512, 512),
-            get_activation(self.activation, 'fc2', args, **kwargs),
+            nn.ReLU(),
             nn.Linear(512, args.num_classes),
         )
 
@@ -56,8 +56,8 @@ class VGG(nn.Module):
                 layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             else:
                 conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
-                layers += [conv2d, CustomNorm2d(v, self.args, **self.kwargs),
-                           get_activation(self.activation, str(i)+'_'+'conv1', self.args, **self.kwargs)]
+                layers += [conv2d, nn.BatchNorm2d(v),
+                           nn.ReLU()]
                 in_channels = v
         return Sequential(*layers)
 

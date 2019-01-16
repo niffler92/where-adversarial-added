@@ -2,8 +2,11 @@ import os
 import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
-from torch.autograd import Variable
+
+from settings import PROJECT_ROOT
 from nsml import HAS_DATASET, DATASET_PATH, NSML_NFS_OUTPUT
+
+__all__ = ['MNIST', 'CIFAR10', 'CIFAR100', 'ImageNet', 'TinyImageNet']
 
 
 def data_stats(dataset):
@@ -30,9 +33,6 @@ def denormalize(images, dataset, clamp=True):
         mean, std = mean.cuda(), std.cuda()
     mean, std = mean.view(1,-1,1,1), std.view(1,-1,1,1)
 
-    if isinstance(images, torch.autograd.Variable):
-        mean, std = Variable(mean), Variable(std)
-
     if clamp:
         return torch.clamp((images*std + mean), 0, 1)
     else:
@@ -51,34 +51,23 @@ def normalize(images, dataset):
         mean, std = mean.cuda(), std.cuda()
     mean, std = mean.view(1,-1,1,1), std.view(1,-1,1,1)
 
-    if isinstance(images, torch.autograd.Variable):
-        mean, std = Variable(mean), Variable(std)
-
     return (images - mean) / std
 
 
-def get_loader(
-        dataset='CIFAR10',
-        root='./data',
-        batch_size=128,
-        num_workers=4
-        ):
-
-    assert dataset in ['CIFAR10', 'CIFAR100', 'MNIST', 'ImageNet', 'TinyImageNet'], "Unknown dataset"
-    # XXX: NFS currently only has the ImageNet dataset
+def get_loader(args):
     if NSML_NFS_OUTPUT:
-        assert dataset == 'ImageNet'
-        root = os.path.join(NSML_NFS_OUTPUT, 'data', 'imagenet', 'train')
-
+        root = os.path.join(NSML_NFS_OUTPUT, args.data_dir)
     elif DATASET_PATH:
         assert HAS_DATASET, "Can't find dataset in nsml. Push or search the dataset"
         root = os.path.join(DATASET_PATH, 'train')
+    else:
+        root = os.path.join(PROJECT_ROOT.as_posix(), args.data_dir)
 
     train_loader, val_loader = (torch.utils.data.DataLoader(
-        globals()[dataset](root=root, train=is_training).preprocess(),
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=num_workers,
+        globals()[args.dataset](root=root, train=is_training).preprocess(),
+        batch_size=args.batch_size,
+        shuffle=args.shuffle,
+        num_workers=args.workers,
         pin_memory=True,
         drop_last=True
         ) for is_training in [True, False]
@@ -205,11 +194,3 @@ class TinyImageNet(datasets.ImageFolder):
                                 normalize,
                             ])
         return self
-
-
-if __name__ == '__main__':
-    eps = 0.031
-    x = torch.zeros([1, 3, 32, 32]) + eps
-    print(x)
-    print(normalize(x, "CIFAR10"))
-    print(denormalize(normalize(x, "CIFAR10"), "CIFAR10"))
