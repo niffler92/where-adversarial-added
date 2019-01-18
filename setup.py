@@ -3,6 +3,7 @@ from setuptools import setup
 setup(
     name='nsml visualization',
     install_requires=[
+        'pillow',
         'termcolor',
         'torch>=1.0.0',
         'torchvision'

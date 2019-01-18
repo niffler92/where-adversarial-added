@@ -198,6 +198,7 @@ class TinyImageNet(datasets.ImageFolder):
 
 
 class COCO(torch.utils.data.Dataset):
+    # NOTE: used only for autoencoder training
     def __init__(self, root, train, download=False):
         root = os.path.join(root, 'images', 'trainval35k')
         self.train = train
@@ -212,7 +213,6 @@ class COCO(torch.utils.data.Dataset):
     
     def __len__(self):
         return len(self.image_paths)
-
 
     def preprocess(self):
         mean, std = data_stats("ImageNet")

@@ -76,7 +76,7 @@ if __name__ == '__main__':
                         help='number of total epochs to run')
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
                         help='manual epoch number (useful on restarts)')
-    parser.add_argument('--learning_rate', default=0.1, type=float,
+    parser.add_argument('--learning_rate', default=0.01, type=float,
                         metavar='LR', help='initial learning rate')
     parser.add_argument('--weight_decay', '--wd', default=5e-4, type=float,
                         metavar='W', help='weight decay (default: 5e-4)')

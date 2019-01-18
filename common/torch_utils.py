@@ -1,4 +1,5 @@
 import os
+import re
 from collections import OrderedDict
 from argparse import Namespace
 
@@ -10,18 +11,22 @@ from nsml import DATASET_PATH, NSML_NFS_OUTPUT
 
 
 def get_model(args):
+    import torchvision.models as torch_models
     import submodules.models as models
     import submodules.autoencoders as autoencoders
 
-    model = getattr(models, args.model)(args)
+    if args.model in dir(torch_models):
+        model = getattr(models, args.model)(pretrained=False)
+    else:
+        model = getattr(models, args.model)(args)
+    
     if args.pretrained:
         if NSML_NFS_OUTPUT:
             path = os.path.join(NSML_NFS_OUTPUT, args.ckpt_dir)
-        elif DATASET_PATH:
-            path = os.path.join(DATASET_PATH, 'train', args.ckpt_dir)
         else:
             path = os.path.join(PROJECT_ROOT, args.ckpt_dir)
-        
+        path = os.path.join(path, args.ckpt_name)
+
         ckpt = torch.load(path, map_location=lambda storage, loc: storage)
         model_state = ckpt['model']
 
