@@ -1,6 +1,5 @@
 import time
 import os
-
 import torch
 import numpy as np
 
@@ -68,7 +67,7 @@ class Trainer:
             loss = loss.item()
             if outputs is not None:
                 _, preds = torch.max(outputs.float(), 1)
-                accuracy = (labels == preds.squeeze()).float().mean().item()
+                accuracy = (labels == preds).float().mean().item()
             else:
                 accuracy = np.nan
 
@@ -100,7 +99,7 @@ class Trainer:
             loss = loss.item()
             if outputs is not None:
                 _, preds = torch.max(outputs.float(), 1)
-                accuracy = (labels == preds.squeeze()).float().mean().item()
+                accuracy = (labels == preds).float().mean().item()
             else:
                 accuracy = np.nan
 

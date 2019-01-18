@@ -9,11 +9,12 @@ import torch
 import numpy as np
 
 from trainer import Trainer
+from attacker import Attacker
+
+import dataloader
 from common.logger import Logger
 import submodules.models as models
-import dataloader
-import settings
-import nsml
+import submodules.attacks as attacks
 
 
 logger = Logger("common")
@@ -34,14 +35,21 @@ def main(args, scope):
         trainer.train()
         logger.log("Training end!")
 
+    elif args.mode == 'attack':
+        logger.log("Experiment start!")
+        attacker = Attacker(train_loader, val_loader, args)
+        attacker.attack()
+        logger.log("Experiment end!")
+
 
 if __name__ == '__main__':
     dataset_names = sorted(name for name in dir(dataloader))
     model_names = sorted(name for name in dir(models))
+    attack_names = sorted(name for name in dir(attacks))
 
     parser = argparse.ArgumentParser(description='ACE Defense on NSML')
     parser.add_argument("--mode", default='train', type=str,
-                        choices=['train'])
+                        choices=['train', 'attack'])
     parser.add_argument("--seed", default=500, type=int)
 
     # Log options
@@ -92,10 +100,15 @@ if __name__ == '__main__':
     parser.add_argument("--pretrained", action='store_true',
                         help="Whether to use a pretrained model." + \
                         "The model must be saved in the checkpoint directory.")
+    
+    # Attack options
+    parser.add_argument('--attack', default='pgd', type=str, choices=attack_names,
+                        help='available algorithms: ' + ' | '.join(attack_names))
 
     # ACE options
     parser.add_argument('--id', default=0, type=int,
                         help="ID of the ACE module")
+    parser.add_argument('--id_target', default=None, type=int)
 
     args = parser.parse_args()
     args.cuda = torch.cuda.is_available()
