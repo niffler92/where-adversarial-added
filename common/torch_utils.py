@@ -13,34 +13,35 @@ def get_model(args):
     import torchvision.models as torch_models
     import submodules.models as models
     import submodules.autoencoders as autoencoders
+    import submodules.ace as ace
 
-    if args.model in dir(torch_models):
-        model = getattr(models, args.model)(pretrained=False)
+    model_name = args.model
+    if model_name in dir(torch_models):
+        model = getattr(models, model_name)(pretrained=False)
     else:
-        model = getattr(models, args.model)(args)
+        model = getattr(models, model_name)(args)
 
     if args.pretrained:
         # Default checkpoint name to model name
-        if args.ckpt_name is None:
-            args.ckpt_name = args.model
+        ckpt_name = model_name if args.ckpt_name is None else args.ckpt_name
 
         if NSML_NFS_OUTPUT:
             path = os.path.join(NSML_NFS_OUTPUT, args.ckpt_dir)
-            args.ckpt_name = MODEL_PATH_DICT[args.ckpt_name]
+            ckpt_name = MODEL_PATH_DICT.get(ckpt_name, ckpt_name)
         else:
             path = os.path.join(PROJECT_ROOT, args.ckpt_dir)
-        
+
         found = False
         for root, _, filenames in os.walk(path):
             for filename in filenames:
-                if args.ckpt_name == filename:
+                if ckpt_name == filename:
                     found = True
                     path = os.path.join(root, filename)
                     break
             if found: break
 
         ckpt = torch.load(path, map_location=lambda storage, loc: storage)
-        if args.model in dir(torch_models):
+        if model_name in dir(torch_models):
             model_state = ckpt
         else:
             model_state = ckpt['model']
@@ -54,9 +55,8 @@ def get_model(args):
                 model_state_cpu[k] = model_state[k]
         model.load_state_dict(model_state_cpu)
 
-    else:
+    elif model_name not in dir(ace):
         init_params(model, args=args)
-    """
 
     model.cuda() if args.cuda else model.cpu()
     if args.multigpu:
@@ -64,7 +64,7 @@ def get_model(args):
     if args.half:
         model.half()
 
-    if args.model in dir(autoencoders):
+    if model_name in dir(autoencoders):
         def compute_loss(model, images, labels):
             outputs = model(images)
             criterion = nn.MSELoss()

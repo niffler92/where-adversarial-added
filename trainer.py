@@ -2,14 +2,12 @@ import time
 import os
 
 import torch
-import torch.nn as nn
 import numpy as np
 
 from common.logger import Logger
 from common.summary import EvaluationMetrics
 from common.torch_utils import get_model, get_optimizer
 from common.utils import get_dirname, show_current_model
-import nsml
 
 
 class Trainer:
@@ -17,6 +15,7 @@ class Trainer:
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.args = args
+
         self.model, self.compute_loss = get_model(args)
         self.epochs = args.epochs
 
@@ -29,7 +28,7 @@ class Trainer:
 
         self.log_path = get_dirname(args)
         self.logger = Logger("train", self.log_path, args.verbose)
-        self.logger.log("Checkpoint files will be saved in {}".format(self.log_path))
+        self.logger.log("Logs will be saved in {}".format(self.log_path))
 
         self.logger.add_level('STEP', 21, 'green')
         self.logger.add_level('EPOCH', 22, 'cyan')
@@ -68,8 +67,7 @@ class Trainer:
             elapsed_time = time.time() - st
             loss = loss.item()
             if outputs is not None:
-                outputs = outputs.float()
-                _, preds = torch.max(outputs, 1)
+                _, preds = torch.max(outputs.float(), 1)
                 accuracy = (labels == preds.squeeze()).float().mean().item()
             else:
                 accuracy = np.nan
@@ -95,14 +93,13 @@ class Trainer:
                 labels = labels.cuda()
             if self.args.half:
                 images = images.half()
-            
+
             outputs, loss = self.compute_loss(self.model, images, labels)
 
             elapsed_time = time.time() - st
             loss = loss.item()
             if outputs is not None:
-                outputs = outputs.float()
-                _, preds = torch.max(outputs, 1)
+                _, preds = torch.max(outputs.float(), 1)
                 accuracy = (labels == preds.squeeze()).float().mean().item()
             else:
                 accuracy = np.nan
