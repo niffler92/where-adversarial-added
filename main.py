@@ -93,13 +93,13 @@ if __name__ == '__main__':
                         help="Whether to use a pretrained model." + \
                         "The model must be saved in the checkpoint directory.")
 
+    # ACE options
+    parser.add_argument('--id', default=0, type=int,
+                        help="ID of the ACE module")
+
     args = parser.parse_args()
     args.cuda = torch.cuda.is_available()
     args.multigpu = (torch.cuda.device_count() > 1)
-
-    # Default checkpoint name to model name
-    if args.ckpt_name is None:
-        args.ckpt_name = args.model
 
     # Set num_classes according to dataset
     if args.dataset in ['MNIST', 'CIFAR10']:

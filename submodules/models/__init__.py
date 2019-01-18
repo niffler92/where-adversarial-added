@@ -16,3 +16,4 @@ from vgg import *
 from lenet import *
 from resnet import *
 from submodules.autoencoders import *
+from submodules.ace import *

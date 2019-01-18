@@ -20,10 +20,24 @@ def get_model(args):
         model = getattr(models, args.model)(args)
 
     if args.pretrained:
+        # Default checkpoint name to model name
+        if args.ckpt_name is None:
+            args.ckpt_name = args.model
+
         if NSML_NFS_OUTPUT:
-            path = os.path.join(NSML_NFS_OUTPUT, args.ckpt_dir, MODEL_PATH_DICT[args.ckpt_name])
+            path = os.path.join(NSML_NFS_OUTPUT, args.ckpt_dir)
+            args.ckpt_name = MODEL_PATH_DICT[args.ckpt_name]
         else:
-            path = os.path.join(PROJECT_ROOT, args.ckpt_dir, args.ckpt_name)
+            path = os.path.join(PROJECT_ROOT, args.ckpt_dir)
+        
+        found = False
+        for root, _, filenames in os.walk(path):
+            for filename in filenames:
+                if args.ckpt_name == filename:
+                    found = True
+                    path = os.path.join(root, filename)
+                    break
+            if found: break
 
         ckpt = torch.load(path, map_location=lambda storage, loc: storage)
         if args.model in dir(torch_models):
@@ -42,6 +56,7 @@ def get_model(args):
 
     else:
         init_params(model, args=args)
+    """
 
     model.cuda() if args.cuda else model.cpu()
     if args.multigpu:
