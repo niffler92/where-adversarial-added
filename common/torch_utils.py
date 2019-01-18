@@ -1,13 +1,12 @@
 import os
 import re
 from collections import OrderedDict
-from argparse import Namespace
 
 import torch
 import torch.nn as nn
-import numpy as np
 
-from nsml import DATASET_PATH, NSML_NFS_OUTPUT
+from settings import PROJECT_ROOT, MODEL_PATH_DICT
+from nsml import NSML_NFS_OUTPUT
 
 
 def get_model(args):
@@ -19,16 +18,18 @@ def get_model(args):
         model = getattr(models, args.model)(pretrained=False)
     else:
         model = getattr(models, args.model)(args)
-    
+
     if args.pretrained:
         if NSML_NFS_OUTPUT:
-            path = os.path.join(NSML_NFS_OUTPUT, args.ckpt_dir)
+            path = os.path.join(NSML_NFS_OUTPUT, args.ckpt_dir, MODEL_PATH_DICT[args.ckpt_name])
         else:
-            path = os.path.join(PROJECT_ROOT, args.ckpt_dir)
-        path = os.path.join(path, args.ckpt_name)
+            path = os.path.join(PROJECT_ROOT, args.ckpt_dir, args.ckpt_name)
 
         ckpt = torch.load(path, map_location=lambda storage, loc: storage)
-        model_state = ckpt['model']
+        if args.model in dir(torch_models):
+            model_state = ckpt
+        else:
+            model_state = ckpt['model']
 
         model_state_cpu = OrderedDict()
         for k in model_state.keys():
@@ -38,7 +39,7 @@ def get_model(args):
             else:
                 model_state_cpu[k] = model_state[k]
         model.load_state_dict(model_state_cpu)
-    
+
     else:
         init_params(model, args=args)
 
@@ -55,7 +56,7 @@ def get_model(args):
             if args.cuda:
                 criterion = criterion.cuda()
             if args.half:
-                criterion = criterion.half()   
+                criterion = criterion.half()
             loss = criterion(outputs, images)
             return None, loss
         return model, compute_loss

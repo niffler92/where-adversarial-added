@@ -97,6 +97,10 @@ if __name__ == '__main__':
     args.cuda = torch.cuda.is_available()
     args.multigpu = (torch.cuda.device_count() > 1)
 
+    # Default checkpoint name to model name
+    if args.ckpt_name is None:
+        args.ckpt_name = args.model
+
     # Set num_classes according to dataset
     if args.dataset in ['MNIST', 'CIFAR10']:
         args.num_classes = 10
