@@ -1,3 +1,4 @@
+from argparse import Namespace
 import time
 import os
 import torch
@@ -16,13 +17,12 @@ class Trainer:
     def __init__(self, train_loader, val_loader, args):
         self.train_loader = train_loader
         self.val_loader = val_loader
-        self.args = args
+        self.args = Namespace(**vars(args))
 
         self.model, self.compute_loss = get_model(args)
         # If adversarial training
         if self.args.adv_ratio != 0:
             if self.args.source is not None:
-                args = self.args
                 args.model = self.args.source
                 args.ckpt_name = self.args.ckpt_src
                 source, _ = get_model(args)
@@ -30,16 +30,16 @@ class Trainer:
                 source = self.model
             self.scheme = getattr(attacks, self.args.attack)(source, args)
 
-        self.epochs = args.epochs
-        self.total_step = len(train_loader) * args.epochs
+        self.epochs = self.args.epochs
+        self.total_step = len(train_loader) * self.args.epochs
         self.step = 0
         self.epoch = 0
         self.start_epoch = 1
-        self.lr = args.learning_rate
+        self.lr = self.args.learning_rate
         self.best_loss = np.inf
 
-        self.log_path = get_dirname(args)
-        self.logger = Logger("train", self.log_path, args.verbose)
+        self.log_path = get_dirname(self.args)
+        self.logger = Logger("train", self.log_path, self.args.verbose)
         self.logger.log("Logs will be saved in {}".format(self.log_path))
 
         self.logger.add_level('STEP', 21, 'green')
@@ -47,10 +47,12 @@ class Trainer:
         self.logger.add_level('EVAL', 23, 'yellow')
 
         params = self.model.parameters()
-        self.optimizer = get_optimizer(args.optimizer, params, args)
+        self.optimizer = get_optimizer(self.args.optimizer, params, self.args)
 
     def train(self):
         show_current_model(self.model, self.args)
+        # DEBUG:
+        self.save()
         self.eval()
         for self.epoch in range(self.start_epoch, self.args.epochs+1):
             self.adjust_learning_rate([int(self.args.epochs/2), int(self.args.epochs*3/4)], factor=0.1)
@@ -146,15 +148,18 @@ class Trainer:
         self.logger.scalar_summary(eval_metrics.avg, self.step, 'EVAL')
 
     def save(self):
-        filename = os.path.join(self.log_path, '{}-{}.pth'.format(self.args.model, self.epoch))
         if self.args.model in dir(ace):
             for autoencoder in self.model.autoencoders:
+                name = autoencoder.__class__.__name__.lower()
+                filename = os.path.join(self.log_path, '{}-{}.pth'.format(name, self.epoch))
                 torch.save({
                     'model': autoencoder.state_dict(),
                     'args': self.args
                 }, filename)
             ckpt_num = self.args.ckpt_num*len(self.model.autoencoders)
         else:
+            name = self.args.model
+            filename = os.path.join(self.log_path, '{}-{}.pth'.format(name, self.epoch))
             torch.save({
                 'model': self.model.state_dict(),
                 'args': self.args

@@ -1,9 +1,10 @@
+from argparse import Namespace
 import numpy as np
 import torch.nn as nn
 
 from common.torch_utils import get_model
 
-__all__ = ['ace', 'ace_resnet101']
+__all__ = ['ace', 'ace_resnet101', 'ace_densenet121', 'ace_vgg19', 'ace_vgg19_bn']
 
 
 class ACE(nn.Module):
@@ -11,7 +12,7 @@ class ACE(nn.Module):
     def __init__(self, classifiers, autoencoders, stacks, lambdas, shifts,
                  args, **kwargs):
         super(ACE, self).__init__()
-        self.args = args
+        self.args = Namespace(**vars(args))
 
         # Load all possible combinations
         self.classifiers = nn.ModuleList([])
@@ -83,8 +84,28 @@ def ace(args, **kwargs):
 
 def ace_resnet101(args, **kwargs):
     assert args.dataset == "ImageNet"
-    global autoencoders, stacks
+    global autoencoders, stacks, shifts
     classifiers = ['resnet101']
-    lamdas = [1]
-    shifts = [(0,0)]
+    lambdas = [1]
+    return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
+
+def ace_densenet121(args, **kwargs):
+    assert args.dataset == "ImageNet"
+    global autoencoders, stacks, shifts
+    classifiers = ['densenet121']
+    lambdas = [1]
+    return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
+
+def ace_vgg19(args, **kwargs):
+    assert args.dataset == "ImageNet"
+    global autoencoders, stacks, shifts
+    classifiers = ['vgg19']
+    lambdas = [1]
+    return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
+
+def ace_vgg19_bn(args, **kwargs):
+    assert args.dataset == "ImageNet"
+    global autoencoders, stacks, shifts
+    classifiers = ['vgg19_bn']
+    lambdas = [1]
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
