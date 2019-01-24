@@ -17,7 +17,14 @@ class Attacker:
         self.args = args
 
         self.model, self.compute_loss = get_model(args)
-        self.scheme = getattr(attacks, self.args.attack)(self.model, args)
+        if self.args.source is not None:
+            args = self.args
+            args.model = self.args.source
+            args.ckpt_name = self.args.ckpt_src
+            source, _ = get_model(args)
+        else:
+            source = self.model
+        self.scheme = getattr(attacks, self.args.attack)(source, args)
 
         self.log_path = get_dirname(args)
         self.logger = Logger("attack", self.log_path, args.verbose)
@@ -28,15 +35,6 @@ class Attacker:
 
     def attack(self):
         show_current_model(self.model, self.args)
-        self.model.train()
-
-        # FIXME: currently only for ace modules
-        if self.args.id_target is not None:
-            args = self.args
-            args.id = self.args.id_target
-            model, _ = get_model(args)
-        else:
-            model = self.model
 
         eval_before = EvaluationMetrics(['Top1', 'Top5', 'Time'])
         eval_after = EvaluationMetrics(['Top1', 'Top5', 'Time'])
@@ -49,7 +47,7 @@ class Attacker:
             if self.args.half:
                 images = images.half()
 
-            outputs, _ = self.compute_loss(model, images, labels)
+            outputs, _ = self.compute_loss(self.model, images, labels)
             elapsed_time = time.time() - st
             
             _, preds = torch.topk(outputs.float(), 5)
@@ -62,8 +60,8 @@ class Attacker:
             eval_before.update('Time', elapsed_time, batch_size)
 
             st = time.time()
-            adv_images, _ = self.scheme.generate(images, labels)
-            outputs, _ = self.compute_loss(model, adv_images, labels)
+            adv_images = self.scheme.generate(images, labels)
+            outputs, _ = self.compute_loss(self.model, adv_images, labels)
             elapsed_time = time.time() - st
 
             _, preds = torch.topk(outputs.float(), 5)

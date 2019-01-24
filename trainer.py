@@ -3,6 +3,9 @@ import os
 import torch
 import numpy as np
 
+import submodules.ace as ace
+import submodules.attacks as attacks
+
 from common.logger import Logger
 from common.summary import EvaluationMetrics
 from common.torch_utils import get_model, get_optimizer
@@ -16,8 +19,18 @@ class Trainer:
         self.args = args
 
         self.model, self.compute_loss = get_model(args)
-        self.epochs = args.epochs
+        # If adversarial training
+        if self.args.adv_ratio != 0:
+            if self.args.source is not None:
+                args = self.args
+                args.model = self.args.source
+                args.ckpt_name = self.args.ckpt_src
+                source, _ = get_model(args)
+            else:
+                source = self.model
+            self.scheme = getattr(attacks, self.args.attack)(source, args)
 
+        self.epochs = args.epochs
         self.total_step = len(train_loader) * args.epochs
         self.step = 0
         self.epoch = 0
@@ -58,6 +71,14 @@ class Trainer:
                 images = images.half()
 
             outputs, loss = self.compute_loss(self.model, images, labels)
+            # If adversarial training
+            if self.args.adv_ratio != 0:
+                adv_images = self.scheme.generate(images, labels)
+                adv_outputs, adv_loss = self.compute_loss(self.model, adv_images, labels)
+                
+                outputs = torch.cat([outputs, adv_outputs])
+                labels = torch.cat([labels, labels])
+                loss = self.args.adv_ratio*adv_loss + (1 - self.args.adv_ratio)*loss
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -94,6 +115,14 @@ class Trainer:
                 images = images.half()
 
             outputs, loss = self.compute_loss(self.model, images, labels)
+            # If adversarial training
+            if self.args.adv_ratio != 0:
+                adv_images = self.scheme.generate(images, labels)
+                adv_outputs, adv_loss = self.compute_loss(self.model, adv_images, labels)
+                
+                outputs = torch.cat([outputs, adv_outputs])
+                labels = torch.cat([labels, labels])
+                loss = self.args.adv_ratio*adv_loss + (1 - self.args.adv_ratio)*loss
 
             elapsed_time = time.time() - st
             loss = loss.item()
@@ -117,17 +146,23 @@ class Trainer:
         self.logger.scalar_summary(eval_metrics.avg, self.step, 'EVAL')
 
     def save(self):
-        filename = os.path.join(self.log_path, 'model-{}.pth'.format(self.epoch))
-        torch.save({
-            'model': self.model.state_dict(),
-            'optimizer': self.optimizer.state_dict(),
-            'epoch': self.epoch,
-            'best_loss': self.best_loss,
-            'args': self.args
-        }, filename)
+        filename = os.path.join(self.log_path, '{}-{}.pth'.format(self.args.model, self.epoch))
+        if self.args.model in dir(ace):
+            for autoencoder in self.model.autoencoders:
+                torch.save({
+                    'model': autoencoder.state_dict(),
+                    'args': self.args
+                }, filename)
+            ckpt_num = self.args.ckpt_num*len(self.model.autoencoders)
+        else:
+            torch.save({
+                'model': self.model.state_dict(),
+                'args': self.args
+            }, filename)
+            ckpt_num = self.args.ckpt_num
 
         pths = [(f, int(f[:-4].split("-")[-1])) for f in os.listdir(self.log_path) if f.endswith('.pth')]
-        diff = len(pths) - self.args.ckpt_num
+        diff = len(pths) - ckpt_num
         if diff > 0:
             sorted_pths = sorted(pths, key=lambda tup: tup[1])
             for i in range(diff):

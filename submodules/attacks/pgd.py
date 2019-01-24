@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 from dataloader import normalize, denormalize
 
-__all__ = ['pgd', 'pgd_carlini']
+__all__ = ['pgd_linf_100', 'pgd_linf_1000']
+__all__ += ['pgd_l2_100', 'pgd_l2_1000']
 
 
 class PGD:
@@ -39,11 +40,17 @@ class PGD:
             adv_images = torch.clamp(denormalize(images, self.args.dataset) + diff.data, 0, 1)
             adv_images = normalize(adv_images, self.args.dataset)
 
-        return adv_images.detach(), labels
+        return adv_images.detach()
 
 
-def pgd(model, args, **kwargs):
+def pgd_linf_100(model, args, **kwargs):
+    return PGD(model, max_iter=100, alpha=0.1, max_clip=0.031, args=args, **kwargs)
+
+def pgd_linf_1000(model, args, **kwargs):
     return PGD(model, max_iter=1000, alpha=0.1, max_clip=0.031, args=args, **kwargs)
 
-def pgd_carlini(model, args, **kwargs):
+def pgd_l2_100(model, args, **kwargs):
+    return PGD(model, max_iter=100, alpha=0.1, max_clip=0.031, norm='L2', args=args, **kwargs)
+
+def pgd_l2_1000(model, args, **kwargs):
     return PGD(model, max_iter=1000, alpha=0.1, max_clip=0.031, norm='L2', args=args, **kwargs)

@@ -73,7 +73,9 @@ if __name__ == '__main__':
     # Architecture
     parser.add_argument('--model', '-a', metavar='MODEL', default='vgg11', choices=model_names,
                         help='model architecture: ' + ' | '.join(model_names) + ' (default: vgg11)')
-
+    parser.add_argument('--source', default=None, choices=model_names,
+                        help='model architecture: ' + ' | '.join(model_names) + ' (default: vgg11)')
+ 
     # Optimization options
     parser.add_argument("--optimizer", default="SGD", type=str.lower,
                         choices=['sgd', 'adam', 'rmsprop', 'sgd_nn', 'adadelta'])
@@ -101,18 +103,22 @@ if __name__ == '__main__':
                         help="Whether to use a pretrained model." + \
                         "The model must be saved in the checkpoint directory.")
     
-    # Attack options
-    parser.add_argument('--attack', default='pgd', type=str, choices=attack_names,
-                        help='available algorithms: ' + ' | '.join(attack_names))
+    parser.add_argument('--adv_ratio', default=0, type=float,
+                        help="Ratio for adversarial training")
 
-    # ACE options
-    parser.add_argument('--id', default=0, type=int,
-                        help="ID of the ACE module")
-    parser.add_argument('--id_target', default=None, type=int)
+    # Attack options
+    parser.add_argument('--attack', default=None, type=str, choices=attack_names,
+                        help='available algorithms: ' + ' | '.join(attack_names))
+    parser.add_argument('--ckpt_src', default=None, type=str,
+                        help='Name of the checkpoint file for the source model')
 
     args = parser.parse_args()
     args.cuda = torch.cuda.is_available()
     args.multigpu = (torch.cuda.device_count() > 1)
+
+    # Reduce batch_size if adversarial training
+    if args.adv_ratio != 0:
+        args.batch_size = int(args.batch_size/2)
 
     # Set num_classes according to dataset
     if args.dataset in ['MNIST', 'CIFAR10']:

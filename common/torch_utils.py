@@ -17,11 +17,11 @@ def get_model(args):
 
     model_name = args.model
     if model_name in dir(torch_models):
-        model = getattr(models, model_name)(pretrained=False)
+        model = getattr(models, model_name)(pretrained=True)
     else:
         model = getattr(models, model_name)(args)
 
-    if args.pretrained:
+    if args.pretrained and model_name not in dir(torch_models) + dir(ace):
         # Default checkpoint name to model name
         ckpt_name = model_name if args.ckpt_name is None else args.ckpt_name
 
@@ -39,6 +39,7 @@ def get_model(args):
                     path = os.path.join(root, filename)
                     break
             if found: break
+        assert found, "Cannot find checkpoint file"
 
         ckpt = torch.load(path, map_location=lambda storage, loc: storage)
         if model_name in dir(torch_models):
@@ -55,7 +56,7 @@ def get_model(args):
                 model_state_cpu[k] = model_state[k]
         model.load_state_dict(model_state_cpu)
 
-    elif model_name not in dir(ace):
+    elif model_name not in dir(torch_models) + dir(ace):
         init_params(model, args=args)
 
     model.cuda() if args.cuda else model.cpu()
@@ -63,6 +64,7 @@ def get_model(args):
         model = nn.DataParallel(model)
     if args.half:
         model.half()
+    model.eval()
 
     if model_name in dir(autoencoders):
         def compute_loss(model, images, labels):

@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from common.torch_utils import get_model
 
-__all__ = ['ace']
+__all__ = ['ace', 'ace_resnet101']
 
 
 class ACE(nn.Module):
@@ -11,62 +11,41 @@ class ACE(nn.Module):
     def __init__(self, classifiers, autoencoders, stacks, lambdas, shifts,
                  args, **kwargs):
         super(ACE, self).__init__()
-        self.id = args.id
         self.args = args
-        args.pretrained = True
 
+        # Load all possible combinations
         self.classifiers = nn.ModuleList([])
         self.autoencoders = nn.ModuleList([])
 
-        # Load all possible combinations
-        if self.id == 0:
-            for c in classifiers:
-                args.model = c
-                self.classifiers.append(get_model(args)[0])
+        # Classifiers are always frozen
+        for c in classifiers:
+            args.model = c
+            model, _ = get_model(args)
+            for param in model.parameters():
+                param.requires_grad = False
+            self.classifiers.append(model)
 
-            self.stacks = stacks
+        self.stacks = stacks
 
-            for a in autoencoders:
-                args.model = a
-                self.autoencoders.append(get_model(args)[0])
+        # Autoencoders can be trained
+        for a in autoencoders:
+            args.model = a
+            model, _ = get_model(args)
+            self.autoencoders.append(model)
 
-            self.lambdas = lambdas
-            self.shifts = shifts
-
-        # Select configuration by modulo
-        else:
-            args.model = classifiers[self.id % len(classifiers)]
-            self.classifiers.append(get_model(args)[0])
-
-            self.stacks = stacks[self.id % len(stacks)]
-
-            autoencoders = self.get_config(autoencoders)
-            for a in autoencoders:
-                args.model = a
-                self.autoencoders.append(get_model(args)[0])
-
-            self.lambdas = self.get_config(lambdas)
-            self.shifts = self.get_config(shifts)
-
-        args.pretrained = False
+        self.lambdas = lambdas
+        self.shifts = shifts
 
     def forward(self, x):
-        if self.id == 0:
-            classifier = np.random.choice(self.classifiers)
-            stacks = np.random.choice(self.stacks)
-            autoencoders = np.random.choice(self.autoencoders, stacks)
-            lambdas = np.random.choice(self.lambdas, stacks)
+        classifier = np.random.choice(self.classifiers)
+        stacks = np.random.choice(self.stacks)
+        autoencoders = np.random.choice(self.autoencoders, stacks)
+        lambdas = np.random.choice(self.lambdas, stacks)
 
-            shifts = []
-            for _ in range(stacks):
-                idx = np.random.choice(len(self.shifts))
-                shifts.append(self.shifts[idx])
-
-        else:
-            classifier = self.classifiers[0]
-            autoencoders = self.autoencoders
-            lambdas = self.lambdas
-            shifts = self.shifts
+        shifts = []
+        for _ in range(stacks):
+            idx = np.random.choice(len(self.shifts))
+            shifts.append(self.shifts[idx])
 
         for idx, autoencoder in enumerate(autoencoders):
             l, r, u, d = self.pad_shape(*shifts[idx])
@@ -88,29 +67,24 @@ class ACE(nn.Module):
 
         return left, right, up, down
 
-    def get_config(self, options):
-        config = []
-        base = len(options)
-        idx = self.id % (base**self.stacks)
-        while idx > 0:
-            config.append(options[idx % base])
-            idx /= base
 
-        return config
+# Default configurations
+classifiers = ['densenet121', 'resnet101', 'vgg19', 'vgg19_bn']
+autoencoders = ['unet']
+stacks = [1]
+lambdas = [0, 0.5, 0.7, 0.9, 0.99, 1]
+shifts = [(0,0), (0,1), (1,0), (0,-1), (-1,0), (1,1), (-1, -1), (1,-1), (-1,1)]
 
 
 def ace(args, **kwargs):
     assert args.dataset == "ImageNet"
+    global classifiers, autoencoders, stacks, lambdas, shifts
+    return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
 
-    classifiers = [
-            'alexnet', #'densenet121', 'densenet161', 'densenet169', 'densenet201',
-            'inception_v3', 'resnet101', 'resnet152', 'resnet18', 'resnet34',
-            'resnet50', 'squeezenet1_0', 'squeezenet1_1', 'vgg11', 'vgg13',
-            'vgg16', 'vgg19', 'vgg11_bn', 'vgg13_bn', 'vgg16_bn', 'vgg19_bn',
-    ]
-    autoencoders = ['unet']
-    stacks = [1]
-    lambdas = [0.5]
-    shifts = [(0,1)]
-
+def ace_resnet101(args, **kwargs):
+    assert args.dataset == "ImageNet"
+    global autoencoders, stacks
+    classifiers = ['resnet101']
+    lamdas = [1]
+    shifts = [(0,0)]
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
