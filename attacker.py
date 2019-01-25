@@ -11,9 +11,8 @@ from common.utils import get_dirname, show_current_model
 
 
 class Attacker:
-    def __init__(self, train_loader, val_loader, args):
-        self.train_loader = train_loader
-        self.val_loader = val_loader
+    def __init__(self, dataloader, args):
+        self.loader = dataloader
         self.args = args
 
         self.model, self.compute_loss = get_model(args)
@@ -27,7 +26,7 @@ class Attacker:
         self.scheme = getattr(attacks, self.args.attack)(source, args)
 
         self.log_path = get_dirname(args)
-        self.logger = Logger("attack", self.log_path, args.verbose)
+        self.logger = Logger(self.args.mode, self.log_path, args.verbose)
         self.logger.log("Logs will be saved in {}".format(self.log_path))
 
         self.logger.add_level('ORIGINAL', 21, 'white')
@@ -39,7 +38,7 @@ class Attacker:
         eval_before = EvaluationMetrics(['Top1', 'Top5', 'Time'])
         eval_after = EvaluationMetrics(['Top1', 'Top5', 'Time'])
 
-        for step, (images, labels) in enumerate(self.val_loader):
+        for step, (images, labels) in enumerate(self.loader):
             st = time.time()
             if self.args.cuda:
                 images = images.cuda()

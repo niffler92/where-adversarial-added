@@ -4,7 +4,7 @@ import torch.nn as nn
 
 from common.torch_utils import get_model
 
-__all__ = ['ace', 'ace_resnet101', 'ace_densenet121', 'ace_vgg19', 'ace_vgg19_bn']
+__all__ = ['ace', 'ace_resnet50', 'ace_densenet121', 'ace_vgg19', 'ace_vgg19_bn']
 
 
 class ACE(nn.Module):
@@ -13,6 +13,8 @@ class ACE(nn.Module):
                  args, **kwargs):
         super(ACE, self).__init__()
         self.args = Namespace(**vars(args))
+        args = Namespace(**vars(args))
+        args.multigpu = False
 
         # Load all possible combinations
         self.classifiers = nn.ModuleList([])
@@ -37,7 +39,7 @@ class ACE(nn.Module):
         self.lambdas = lambdas
         self.shifts = shifts
 
-    def forward(self, x):
+    def forward(self, x, ae_only=False):
         classifier = np.random.choice(self.classifiers)
         stacks = np.random.choice(self.stacks)
         autoencoders = np.random.choice(self.autoencoders, stacks)
@@ -56,7 +58,7 @@ class ACE(nn.Module):
             x_shift = x_pad[:,:,d:h-u,r:w-l].contiguous()
             x = lambdas[idx]*autoencoder(x_shift) + (1 - lambdas[idx])*x_shift
 
-        out = classifier(x)
+        out = x if ae_only else classifier(x)
 
         return out
 
@@ -70,7 +72,7 @@ class ACE(nn.Module):
 
 
 # Default configurations
-classifiers = ['densenet121', 'resnet101', 'vgg19', 'vgg19_bn']
+classifiers = ['densenet121', 'resnet50', 'vgg19', 'vgg19_bn']
 autoencoders = ['unet']
 stacks = [1]
 lambdas = [0, 0.5, 0.7, 0.9, 0.99, 1]
@@ -82,11 +84,12 @@ def ace(args, **kwargs):
     global classifiers, autoencoders, stacks, lambdas, shifts
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
 
-def ace_resnet101(args, **kwargs):
+def ace_resnet50(args, **kwargs):
     assert args.dataset == "ImageNet"
     global autoencoders, stacks, shifts
-    classifiers = ['resnet101']
+    classifiers = ['resnet50']
     lambdas = [1]
+    shifts = [(0,0)]
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
 
 def ace_densenet121(args, **kwargs):
@@ -94,6 +97,7 @@ def ace_densenet121(args, **kwargs):
     global autoencoders, stacks, shifts
     classifiers = ['densenet121']
     lambdas = [1]
+    shifts = [(0,0)]
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
 
 def ace_vgg19(args, **kwargs):
@@ -101,6 +105,7 @@ def ace_vgg19(args, **kwargs):
     global autoencoders, stacks, shifts
     classifiers = ['vgg19']
     lambdas = [1]
+    shifts = [(0,0)]
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
 
 def ace_vgg19_bn(args, **kwargs):
@@ -108,4 +113,5 @@ def ace_vgg19_bn(args, **kwargs):
     global autoencoders, stacks, shifts
     classifiers = ['vgg19_bn']
     lambdas = [1]
+    shifts = [(0,0)]
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)

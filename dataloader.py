@@ -15,7 +15,7 @@ def data_stats(dataset):
     """
     Returns: *mean, *std
     """
-    if dataset in ["CIFAR10", "CIFAR100", "TinyImageNet", "ImageNet"]:
+    if dataset in ["CIFAR10", "CIFAR100", "TinyImageNet", "ImageNet", "COCO"]:
         return [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
     elif dataset == "MNIST":
         return [0.1307], [0.3081]

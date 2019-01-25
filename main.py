@@ -31,13 +31,19 @@ def main(args, scope):
 
     if args.mode == 'train':
         logger.log("Training start!")
-        trainer = Trainer(train_loader, val_loader, args)
+        trainer = Trainer(train_loader, args)
         trainer.train()
         logger.log("Training end!")
 
+    elif args.mode == 'infer':
+        logger.log("Evaluation start!")
+        trainer = Trainer(val_loader, args)
+        trainer.infer()
+        logger.log("Evaluation end!")
+
     elif args.mode == 'attack':
         logger.log("Experiment start!")
-        attacker = Attacker(train_loader, val_loader, args)
+        attacker = Attacker(val_loader, args)
         attacker.attack()
         logger.log("Experiment end!")
 
@@ -49,7 +55,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='ACE Defense on NSML')
     parser.add_argument("--mode", default='train', type=str,
-                        choices=['train', 'attack'])
+                        choices=['train', 'attack', 'infer'])
     parser.add_argument("--seed", default=500, type=int)
 
     # Log options
@@ -93,8 +99,6 @@ if __name__ == '__main__':
     parser.add_argument('--half', dest='half', action='store_true',
                         help='use half-precision(16-bit) ')
 
-    parser.add_argument('--ckpt_num', default=1, type=int,
-                        help="Number of checkpoints to keep")
     parser.add_argument('--ckpt_name', default=None, type=str,
                         help='Name of the checkpoint file')
     parser.add_argument('--ckpt_dir', default='checkpoints', type=str,
@@ -103,8 +107,10 @@ if __name__ == '__main__':
                         help="Whether to use a pretrained model." + \
                         "The model must be saved in the checkpoint directory.")
     
-    parser.add_argument('--adv_ratio', default=0, type=float,
+    parser.add_argument('--adv_ratio', default=None, type=float,
                         help="Ratio for adversarial training")
+    parser.add_argument('--recon_ratio', default=0.1, type=float,
+                        help="Ratio between classification loss and reconstruction loss")
 
     # Attack options
     parser.add_argument('--attack', default=None, type=str, choices=attack_names,
@@ -117,7 +123,7 @@ if __name__ == '__main__':
     args.multigpu = (torch.cuda.device_count() > 1)
 
     # Reduce batch_size if adversarial training
-    if args.adv_ratio != 0:
+    if args.adv_ratio is not None:
         args.batch_size = int(args.batch_size/2)
 
     # Set num_classes according to dataset

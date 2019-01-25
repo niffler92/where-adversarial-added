@@ -21,43 +21,41 @@ def get_model(args):
     else:
         model = getattr(models, model_name)(args)
 
-    if args.pretrained and model_name not in dir(torch_models) + dir(ace):
-        # Default checkpoint name to model name
-        ckpt_name = model_name if args.ckpt_name is None else args.ckpt_name
+    if model_name not in dir(torch_models) + dir(ace):
+        if args.pretrained:
+            # Default checkpoint name to model name
+            ckpt_name = model_name if args.ckpt_name is None else args.ckpt_name
 
-        if NSML_NFS_OUTPUT:
-            path = os.path.join(NSML_NFS_OUTPUT, args.ckpt_dir)
-            ckpt_name = MODEL_PATH_DICT.get(ckpt_name, ckpt_name)
-        else:
-            path = os.path.join(PROJECT_ROOT, args.ckpt_dir)
+            if NSML_NFS_OUTPUT:
+                path = os.path.join(NSML_NFS_OUTPUT, args.ckpt_dir)
+                ckpt_name = MODEL_PATH_DICT.get(ckpt_name, ckpt_name)
+            else:
+                path = os.path.join(PROJECT_ROOT, args.ckpt_dir)
 
-        found = False
-        for root, _, filenames in os.walk(path):
-            for filename in filenames:
-                if ckpt_name == filename:
-                    found = True
-                    path = os.path.join(root, filename)
-                    break
-            if found: break
-        assert found, "Cannot find checkpoint file"
+            found = False
+            for root, _, filenames in os.walk(path):
+                for filename in filenames:
+                    if ckpt_name == filename:
+                        found = True
+                        path = os.path.join(root, filename)
+                        break
+                if found: break
+            assert found, "Cannot find checkpoint file"
 
-        ckpt = torch.load(path, map_location=lambda storage, loc: storage)
-        if model_name in dir(torch_models):
-            model_state = ckpt
-        else:
+            ckpt = torch.load(path, map_location=lambda storage, loc: storage)
             model_state = ckpt['model']
 
-        model_state_cpu = OrderedDict()
-        for k in model_state.keys():
-            if k.startswith("module."):
-                k_new = k[7:]
-                model_state_cpu[k_new] = model_state[k]
-            else:
-                model_state_cpu[k] = model_state[k]
-        model.load_state_dict(model_state_cpu)
+            model_state_cpu = OrderedDict()
+            for k in model_state.keys():
+                if k.startswith("module."):
+                    k_new = k[7:]
+                    model_state_cpu[k_new] = model_state[k]
+                else:
+                    model_state_cpu[k] = model_state[k]
+            model.load_state_dict(model_state_cpu)
 
-    elif model_name not in dir(torch_models) + dir(ace):
-        init_params(model, args=args)
+        else:
+            init_params(model, args=args)
 
     model.cuda() if args.cuda else model.cpu()
     if args.multigpu:
@@ -76,6 +74,28 @@ def get_model(args):
                 criterion = criterion.half()
             loss = criterion(outputs, images)
             return None, loss
+        return model, compute_loss
+
+    elif model_name in dir(ace):
+        def compute_loss(model, images, labels):
+            outputs = model(images, ae_only=True)
+            criterion = nn.MSELoss()
+            if args.cuda:
+                criterion = criterion.cuda()
+            if args.half:
+                criterion = criterion.half()
+            recon_loss = criterion(outputs, images)
+
+            outputs = model(images)
+            criterion = nn.CrossEntropyLoss()
+            if args.cuda:
+                criterion = criterion.cuda()
+            if args.half:
+                criterion = criterion.half()
+            class_loss = criterion(outputs, labels)
+
+            loss = args.recon_ratio*recon_loss + (1 - args.recon_ratio)*class_loss
+            return outputs, loss
         return model, compute_loss
 
     else:
