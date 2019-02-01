@@ -5,6 +5,7 @@ from collections import OrderedDict
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from settings import PROJECT_ROOT, MODEL_PATH_DICT
 from nsml import NSML_NFS_OUTPUT
@@ -181,13 +182,12 @@ def softmax(input, T=1):
         labels = torch.max(input, dim=1)[1]
         out = torch.cat([one_hot(label, input.size(1)).view(1,-1) for label in labels])
     else:
-        out = torch.exp(input/T)/torch.sum(torch.exp(input/T), dim=1, keepdim=True)
+        out = F.softmax(input/T, dim=1)
     return out
 
 
 def cross_entropy(output, target):
-    logsoftmax = torch.log(softmax(output))
-    out = torch.mean(torch.sum(-target*logsoftmax, dim=1))
+    out = torch.mean(torch.sum(-target*F.log_softmax(output, dim=1), dim=1))
     return out
 
 

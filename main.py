@@ -71,8 +71,8 @@ if __name__ == '__main__':
                         help='available datasets: ' + ' | '.join(dataset_names))
     parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                         help='number of data loading workers (default: 4)')
-    parser.add_argument('-b', '--batch_size', default=128, type=int,
-                        metavar='N', help='mini-batch size (default: 128)')
+    parser.add_argument('-b', '--batch_size', default=32, type=int,
+                        metavar='N', help='mini-batch size (default: 32)')
     parser.add_argument('--shuffle', action='store_true',
                         help="shuffle the dataset every epoch")
 
