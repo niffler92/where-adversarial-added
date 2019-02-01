@@ -100,17 +100,25 @@ if __name__ == '__main__':
                         help='use half-precision(16-bit) ')
 
     parser.add_argument('--ckpt_name', default=None, type=str,
-                        help='Name of the checkpoint file')
+                        help='name of the checkpoint file')
     parser.add_argument('--ckpt_dir', default='checkpoints', type=str,
-                        help='The directory used to save the trained models')
+                        help='directory used to save the trained models')
     parser.add_argument("--pretrained", action='store_true',
-                        help="Whether to use a pretrained model." + \
-                        "The model must be saved in the checkpoint directory.")
+                        help="whether to use a pretrained model." + \
+                        "the model must be saved in the checkpoint directory.")
+    
+    parser.add_argument('--recon_ratio', default=0.1, type=float,
+                        help="ratio between classification loss and reconstruction loss")
     
     parser.add_argument('--adv_ratio', default=None, type=float,
-                        help="Ratio for adversarial training")
-    parser.add_argument('--recon_ratio', default=0.1, type=float,
-                        help="Ratio between classification loss and reconstruction loss")
+                        help="ratio between original loss and adversarial loss")
+    parser.add_argument('--distill_ratio', default=0, type=float,
+                        help="ratio between the true label and soft label")
+    parser.add_argument('--distill_T', default=0, type=float,
+                        help="temperature for creating soft labels")
+
+    parser.add_argument('--mixup', default=None, type=float,
+                        help="alpha for mixup training")
 
     # Attack options
     parser.add_argument('--attack', default=None, type=str, choices=attack_names,
@@ -121,10 +129,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args.cuda = torch.cuda.is_available()
     args.multigpu = (torch.cuda.device_count() > 1)
-
-    # Reduce batch_size if adversarial training
-    if args.adv_ratio is not None:
-        args.batch_size = int(args.batch_size/2)
 
     # Set num_classes according to dataset
     if args.dataset in ['MNIST', 'CIFAR10']:

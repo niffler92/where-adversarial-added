@@ -48,30 +48,32 @@ class Attacker:
 
             outputs, _ = self.compute_loss(self.model, images, labels)
             elapsed_time = time.time() - st
-            
-            _, preds = torch.topk(outputs.float(), 5)
-            top1 = (labels == preds[:,0]).float().mean().item()
-            top5 = torch.sum((labels.unsqueeze(1).repeat(1,5) == preds).float(), 1).mean().item()
-
-            batch_size = labels.size(0)
-            eval_before.update('Top1', top1, batch_size)
-            eval_before.update('Top5', top5, batch_size)
-            eval_before.update('Time', elapsed_time, batch_size)
-
+            eval_before.update('Time', elapsed_time, self.args.batch_size)
+           
             st = time.time()
             adv_images = self.scheme.generate(images, labels)
-            outputs, _ = self.compute_loss(self.model, adv_images, labels)
+            adv_outputs, _ = self.compute_loss(self.model, adv_images, labels)
             elapsed_time = time.time() - st
+            eval_after.update('Time', elapsed_time, self.args.batch_size)
 
-            _, preds = torch.topk(outputs.float(), 5)
-            top1 = (labels == preds[:,0]).float().mean().item()
-            top5 = torch.sum((labels.unsqueeze(1).repeat(1,5) == preds).float(), 1).mean().item()
+            _, targets = torch.max(labels, 1)
+            _, preds = torch.topk(outputs, 5)
+            top1 = (targets == preds[:,0]).float().mean().item()
+            top5 = torch.sum((targets.unsqueeze(1).repeat(1,5) == preds).float(), 1).mean().item()
 
-            batch_size = labels.size(0)
-            eval_after.update('Top1', top1, batch_size)
-            eval_after.update('Top5', top5, batch_size)
-            eval_after.update('Time', elapsed_time, batch_size)
+            eval_before.update('Top1', top1, self.args.batch_size)
+            eval_before.update('Top5', top5, self.args.batch_size)
+
+            _, adv_preds = torch.topk(adv_outputs, 5)
+            top1 = (targets == adv_preds[:,0]).float().mean().item()
+            top5 = torch.sum((targets.unsqueeze(1).repeat(1,5) == adv_preds).float(), 1).mean().item()
+
+            eval_after.update('Top1', top1, self.args.batch_size)
+            eval_after.update('Top5', top5, self.args.batch_size)
 
             if (step + 1) % self.args.log_step == 0:
                 self.logger.scalar_summary(eval_before.avg, step + 1, 'ORIGINAL')
                 self.logger.scalar_summary(eval_after.avg, step + 1, 'ATTACKED')
+
+        self.logger.scalar_summary(eval_before.avg, step + 1, 'ORIGINAL')
+        self.logger.scalar_summary(eval_after.avg, step + 1, 'ATTACKED')

@@ -9,7 +9,7 @@ import submodules.attacks as attacks
 
 from common.logger import Logger
 from common.summary import EvaluationMetrics
-from common.torch_utils import get_model, get_optimizer
+from common.torch_utils import get_model, get_optimizer, softmax
 from common.utils import get_dirname, show_current_model
 
 
@@ -43,6 +43,7 @@ class Trainer:
 
         self.logger.add_level('STEP', 21, 'green')
         self.logger.add_level('EPOCH', 22, 'cyan')
+        self.logger.add_level('EVAL', 23, 'green')
 
         params = self.model.parameters()
         self.optimizer = get_optimizer(self.args.optimizer, params, self.args)
@@ -60,7 +61,7 @@ class Trainer:
 
     def train_epoch(self):
         self.model.train()
-        eval_metrics = EvaluationMetrics(['Loss', 'Acc', 'Time'])
+        eval_metrics = EvaluationMetrics(['Loss', 'Top1', 'Top5', 'Time'])
 
         for i, (images, labels) in enumerate(self.loader):
             st = time.time()
@@ -71,16 +72,22 @@ class Trainer:
             if self.args.half:
                 images = images.half()
 
-            outputs, loss = self.compute_loss(self.model, images, labels)
-            # If adversarial training
+            # adversarial training with soft labels
             if self.args.adv_ratio is not None:
-                adv_images = self.scheme.generate(images, labels)
-                adv_outputs, adv_loss = self.compute_loss(self.model, adv_images, labels)
-                
-                if adv_outputs is not None:
-                    outputs = torch.cat([outputs, adv_outputs])
-                labels = torch.cat([labels, labels])
-                loss = self.args.adv_ratio*adv_loss + (1 - self.args.adv_ratio)*loss
+                k = int(len(images)*self.args.adv_ratio)
+                adv_images = self.scheme.generate(images[:k], labels[:k])
+                adv_outputs = self.model(adv_images)
+
+                soft_labels = softmax(adv_outputs, self.args.distill_T)
+                if self.args.cuda:
+                    soft_labels = soft_labels.cuda()
+                soft_ratio = self.args.distill_ratio
+                adv_labels = soft_ratio*soft_labels + (1 - soft_ratio)*labels[:k]
+
+                images[:k] = adv_images
+                labels[:k] = adv_labels
+
+            outputs, loss = self.compute_loss(self.model, images, labels)
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -88,16 +95,20 @@ class Trainer:
 
             elapsed_time = time.time() - st
             loss = loss.item()
-            if outputs is not None:
-                _, preds = torch.max(outputs.float(), 1)
-                accuracy = (labels == preds).float().mean().item()
-            else:
-                accuracy = np.nan
 
-            batch_size = labels.size(0)
-            eval_metrics.update('Loss', loss, batch_size)
-            eval_metrics.update('Acc', accuracy, batch_size)
-            eval_metrics.update('Time', elapsed_time, batch_size)
+            if outputs is not None:
+                _, targets = torch.max(labels, 1)
+                _, preds = torch.topk(outputs, 5)
+                top1 = (targets == preds[:,0]).float().mean().item()
+                top5 = torch.sum((targets.unsqueeze(1).repeat(1,5) == preds).float(), 1).mean().item()
+            else:
+                top1 = np.nan
+                top5 = np.nan
+
+            eval_metrics.update('Loss', loss, self.args.batch_size)
+            eval_metrics.update('Top1', top1, self.args.batch_size)
+            eval_metrics.update('Top5', top5, self.args.batch_size)
+            eval_metrics.update('Time', elapsed_time, self.args.batch_size)
 
             if self.step % self.args.log_step == 0:
                 self.logger.scalar_summary(eval_metrics.val, self.step, 'STEP')
@@ -106,7 +117,7 @@ class Trainer:
 
     def eval(self):
         self.model.eval()
-        eval_metrics = EvaluationMetrics(['Loss', 'Acc', 'Time'])
+        eval_metrics = EvaluationMetrics(['Loss', 'Top1', 'Top5', 'Time'])
 
         for i, (images, labels) in enumerate(self.loader):
             st = time.time()
@@ -121,21 +132,25 @@ class Trainer:
 
             elapsed_time = time.time() - st
             loss = loss.item()
-            if outputs is not None:
-                _, preds = torch.max(outputs.float(), 1)
-                accuracy = (labels == preds).float().mean().item()
-            else:
-                accuracy = np.nan
 
-            batch_size = labels.size(0)
-            eval_metrics.update('Loss', loss, batch_size)
-            eval_metrics.update('Acc', accuracy, batch_size)
-            eval_metrics.update('Time', elapsed_time, batch_size)
+            if outputs is not None:
+                _, targets = torch.max(labels, 1)
+                _, preds = torch.topk(outputs, 5)
+                top1 = (targets == preds[:,0]).float().mean().item()
+                top5 = torch.sum((targets.unsqueeze(1).repeat(1,5) == preds).float(), 1).mean().item()
+            else:
+                top1 = np.nan
+                top5 = np.nan
+
+            eval_metrics.update('Loss', loss, self.args.batch_size)
+            eval_metrics.update('Top1', top1, self.args.batch_size)
+            eval_metrics.update('Top5', top5, self.args.batch_size)
+            eval_metrics.update('Time', elapsed_time, self.args.batch_size)
             
             if self.step % self.args.log_step == 0:
-                self.logger.scalar_summary(eval_metrics.val, self.step, 'STEP')
+                self.logger.scalar_summary(eval_metrics.avg, self.step, 'EVAL')
 
-        self.logger.scalar_summary(eval_metrics.avg, self.step, 'EPOCH')
+        self.logger.scalar_summary(eval_metrics.avg, self.step, 'EVAL')
 
     def save(self):
         if self.args.model in dir(ace):

@@ -5,6 +5,7 @@ import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
+from common.torch_utils import one_hot
 from settings import PROJECT_ROOT
 from nsml import HAS_DATASET, DATASET_PATH, NSML_NFS_OUTPUT
 
@@ -89,6 +90,10 @@ class MNIST(datasets.MNIST):
         ])
         return self
 
+    def __getitem__(self, idx):
+        image, label = super(MNIST, self).__getitem__(idx)
+        return image, one_hot(label, 10)
+
 
 class CIFAR10(datasets.CIFAR10):
     def __init__(self, root, train, download=False):
@@ -108,6 +113,10 @@ class CIFAR10(datasets.CIFAR10):
             self.transform = transforms.Compose([transforms.ToTensor(), normalize,])
         return self
 
+    def __getitem__(self, idx):
+        image, label = super(CIFAR10, self).__getitem__(idx)
+        return image, one_hot(label, 10)
+
 
 class CIFAR100(CIFAR10):
     base_folder = 'cifar-100-python'
@@ -120,6 +129,10 @@ class CIFAR100(CIFAR10):
     test_list = [
         ['test', 'f0ef6b0ae62326f3e7ffdfab6717acfc'],
     ]
+
+    def __getitem__(self, idx):
+        image, label = super(CIFAR100, self).__getitem__(idx)
+        return image, one_hot(label, 100)
 
 
 class ImageNet(datasets.ImageFolder):
@@ -148,6 +161,10 @@ class ImageNet(datasets.ImageFolder):
                                 normalize,
                             ])
         return self
+
+    def __getitem__(self, idx):
+        image, label = super(ImageNet, self).__getitem__(idx)
+        return image, one_hot(label, 1000)
 
 
 class TinyImageNet(datasets.ImageFolder):
@@ -195,6 +212,10 @@ class TinyImageNet(datasets.ImageFolder):
                                 normalize,
                             ])
         return self
+
+    def __getitem__(self, idx):
+        image, label = super(TinyImageNet, self).__getitem__(idx)
+        return image, one_hot(label, 200)
 
 
 class COCO(torch.utils.data.Dataset):

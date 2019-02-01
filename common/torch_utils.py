@@ -2,6 +2,7 @@ import os
 import re
 from collections import OrderedDict
 
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -66,34 +67,28 @@ def get_model(args):
 
     if model_name in dir(autoencoders):
         def compute_loss(model, images, labels):
-            outputs = model(images)
             criterion = nn.MSELoss()
             if args.cuda:
                 criterion = criterion.cuda()
             if args.half:
                 criterion = criterion.half()
+            outputs = model(images)
             loss = criterion(outputs, images)
             return None, loss
         return model, compute_loss
 
     elif model_name in dir(ace):
         def compute_loss(model, images, labels):
-            outputs = model(images, ae_only=True)
             criterion = nn.MSELoss()
             if args.cuda:
                 criterion = criterion.cuda()
             if args.half:
                 criterion = criterion.half()
+            outputs = model(images, ae_only=True)
             recon_loss = criterion(outputs, images)
 
             outputs = model(images)
-            criterion = nn.CrossEntropyLoss()
-            if args.cuda:
-                criterion = criterion.cuda()
-            if args.half:
-                criterion = criterion.half()
-            class_loss = criterion(outputs, labels)
-
+            class_loss = mixup(cross_entropy, model, images, labels, args)
             loss = args.recon_ratio*recon_loss + (1 - args.recon_ratio)*class_loss
             return outputs, loss
         return model, compute_loss
@@ -101,12 +96,7 @@ def get_model(args):
     else:
         def compute_loss(model, images, labels):
             outputs = model(images)
-            criterion = nn.CrossEntropyLoss()
-            if args.cuda:
-                criterion = criterion.cuda()
-            if args.half:
-                criterion = criterion.half()
-            loss = criterion(outputs, labels)
+            loss = mixup(cross_entropy, model, images, labels, args)
             return outputs, loss
         return model, compute_loss
 
@@ -166,3 +156,45 @@ def init_params(model, args=None):
             for module in m._modules:
                 try: init_params(module, args=args)
                 except: continue
+
+
+def mixup(criterion, model, images, labels, args=None):
+    assert args is not None
+    if args.mixup is None:
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+    else:
+        lam = np.random.beta(args.mixup, args.mixup)
+        idx = torch.randperm(args.batch_size)
+        if args.cuda:
+            idx = idx.cuda()
+        
+        images = lam*images + (1 - lam)*images[idx,:,:,:]
+        outputs = model(images)
+        loss = lam*criterion(outputs, labels) + (1 - lam)*criterion(outputs, labels[idx,:])
+
+    return loss
+
+
+def softmax(input, T=1):
+    if T == 0:
+        labels = torch.max(input, dim=1)[1]
+        out = torch.cat([one_hot(label, input.size(1)).view(1,-1) for label in labels])
+    else:
+        out = torch.exp(input/T)/torch.sum(torch.exp(input/T), dim=1, keepdim=True)
+    return out
+
+
+def cross_entropy(output, target):
+    logsoftmax = torch.log(softmax(output))
+    out = torch.mean(torch.sum(-target*logsoftmax, dim=1))
+    return out
+
+
+def one_hot(label, num_classes=None):
+    assert num_classes is not None
+    label = torch.LongTensor([label])
+    onehot = torch.FloatTensor(num_classes)
+    onehot.zero_()
+    onehot.scatter_(0, label, 1)
+    return onehot

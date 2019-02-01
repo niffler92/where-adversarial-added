@@ -1,8 +1,12 @@
 import torch
 import torch.nn as nn
-from dataloader import normalize, denormalize
 
-__all__ = ['pgd_linf_100', 'pgd_linf_1000']
+from dataloader import normalize, denormalize
+from common.torch_utils import cross_entropy
+
+
+__all__ = ['fgsm']
+__all__ += ['pgd_linf_100', 'pgd_linf_1000']
 __all__ += ['pgd_l2_100', 'pgd_l2_1000']
 
 
@@ -16,8 +20,7 @@ class PGD:
         self.norm = norm
         self.args = args
 
-        self.criterion = nn.CrossEntropyLoss()
-        if self.args.half: self.criterion.half()
+        self.criterion = cross_entropy
 
     def generate(self, images, labels):
         adv_images = images.clone()
@@ -42,6 +45,9 @@ class PGD:
 
         return adv_images.detach()
 
+
+def fgsm(model, args, **kwargs):
+    return PGD(model, max_iter=1, alpha=1e3, max_clip=0.031, args=args, **kwargs)
 
 def pgd_linf_100(model, args, **kwargs):
     return PGD(model, max_iter=100, alpha=0.1, max_clip=0.031, args=args, **kwargs)
