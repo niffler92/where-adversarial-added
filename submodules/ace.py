@@ -2,9 +2,11 @@ from argparse import Namespace
 import numpy as np
 import torch.nn as nn
 
+import torchvision.models as torch_models
 from common.torch_utils import get_model
 
 __all__ = ['ace', 'ace_resnet50', 'ace_densenet121', 'ace_vgg19', 'ace_vgg19_bn']
+__all__ += ['ace_cifar']
 
 
 class ACE(nn.Module):
@@ -24,8 +26,9 @@ class ACE(nn.Module):
         for c in classifiers:
             args.model = c
             model, _ = get_model(args)
-            for param in model.parameters():
-                param.requires_grad = False
+            if not args.fine_tune:
+                for param in model.parameters():
+                    param.requires_grad = False
             self.classifiers.append(model)
 
         self.stacks = stacks
@@ -86,7 +89,7 @@ def ace(args, **kwargs):
 
 def ace_resnet50(args, **kwargs):
     assert args.dataset == "ImageNet"
-    global autoencoders, stacks, shifts
+    global autoencoders, stacks
     classifiers = ['resnet50']
     lambdas = [1]
     shifts = [(0,0)]
@@ -94,7 +97,7 @@ def ace_resnet50(args, **kwargs):
 
 def ace_densenet121(args, **kwargs):
     assert args.dataset == "ImageNet"
-    global autoencoders, stacks, shifts
+    global autoencoders, stacks
     classifiers = ['densenet121']
     lambdas = [1]
     shifts = [(0,0)]
@@ -102,7 +105,7 @@ def ace_densenet121(args, **kwargs):
 
 def ace_vgg19(args, **kwargs):
     assert args.dataset == "ImageNet"
-    global autoencoders, stacks, shifts
+    global autoencoders, stacks
     classifiers = ['vgg19']
     lambdas = [1]
     shifts = [(0,0)]
@@ -110,8 +113,17 @@ def ace_vgg19(args, **kwargs):
 
 def ace_vgg19_bn(args, **kwargs):
     assert args.dataset == "ImageNet"
-    global autoencoders, stacks, shifts
+    global autoencoders, stacks
     classifiers = ['vgg19_bn']
     lambdas = [1]
+    shifts = [(0,0)]
+    return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
+
+
+def ace_cifar(args, **kwargs):
+    assert "CIFAR" in args.dataset
+    global autoencoders, stacks
+    classifiers = ['ResNet18']
+    lambdas = [0.9]
     shifts = [(0,0)]
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)

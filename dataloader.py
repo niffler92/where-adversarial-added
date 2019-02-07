@@ -118,20 +118,26 @@ class CIFAR10(datasets.CIFAR10):
         return image, one_hot(label, 10)
 
 
-class CIFAR100(CIFAR10):
-    base_folder = 'cifar-100-python'
-    url = "http://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz"
-    filename = "cifar-100-python.tar.gz"
-    tgz_md5 = 'eb9058c3a382ffc7106e4002c42a8d85'
-    train_list = [
-        ['train', '16019d7e3df5f24257cddd939b257f8d'],
-    ]
-    test_list = [
-        ['test', 'f0ef6b0ae62326f3e7ffdfab6717acfc'],
-    ]
+class CIFAR100(datasets.CIFAR100):
+    def __init__(self, root, train, download=False):
+        super().__init__(root, train=train, download=download)
+
+    def preprocess(self):
+        mean, std = data_stats("CIFAR10")
+        normalize = transforms.Normalize(mean=mean, std=std)
+        if self.train:
+            self.transform = transforms.Compose([
+                                transforms.RandomHorizontalFlip(),
+                                transforms.RandomCrop(32, 4),
+                                transforms.ToTensor(),
+                                normalize,
+                            ])
+        else:
+            self.transform = transforms.Compose([transforms.ToTensor(), normalize,])
+        return self
 
     def __getitem__(self, idx):
-        image, label = super(CIFAR100, self).__getitem__(idx)
+        image, label = super().__getitem__(idx)
         return image, one_hot(label, 100)
 
 

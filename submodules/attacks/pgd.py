@@ -4,7 +4,6 @@ import torch.nn as nn
 from dataloader import normalize, denormalize
 from common.torch_utils import cross_entropy
 
-
 __all__ = ['fgsm']
 __all__ += ['pgd_linf_100', 'pgd_linf_1000']
 __all__ += ['pgd_l2_100', 'pgd_l2_1000']

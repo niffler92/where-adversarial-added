@@ -34,6 +34,7 @@ class Attacker:
 
     def attack(self):
         show_current_model(self.model, self.args)
+        self.model.eval()
 
         eval_before = EvaluationMetrics(['Top1', 'Top5', 'Time'])
         eval_after = EvaluationMetrics(['Top1', 'Top5', 'Time'])

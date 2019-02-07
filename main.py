@@ -119,6 +119,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--mixup', default=None, type=float,
                         help="alpha for mixup training")
+    parser.add_argument('--fine_tune', action='store_true',
+                        help="fine-tune the classifier attached to ace module")
 
     # Attack options
     parser.add_argument('--attack', default=None, type=str, choices=attack_names,
