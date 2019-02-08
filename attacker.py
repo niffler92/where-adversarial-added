@@ -3,6 +3,7 @@ import torch
 
 from trainer import Trainer
 import submodules.attacks as attacks
+import submodules.defenses as defenses
 
 from common.logger import Logger
 from common.summary import EvaluationMetrics
@@ -23,7 +24,15 @@ class Attacker:
             source, _ = get_model(args)
         else:
             source = self.model
-        self.scheme = getattr(attacks, self.args.attack)(source, args)
+
+        if self.args.attack is not None:
+            self.attack = getattr(attacks, self.args.attack)(source, args)
+        else:
+            self.attack = None
+        if self.args.defense is not None:
+            self.defense = getattr(defenses, self.args.defense)(self.model, args) 
+        else:
+            self.defense = None
 
         self.log_path = get_dirname(args)
         self.logger = Logger(self.args.mode, self.log_path, args.verbose)
@@ -31,13 +40,15 @@ class Attacker:
 
         self.logger.add_level('ORIGINAL', 21, 'white')
         self.logger.add_level('ATTACKED', 22, 'yellow')
+        self.logger.add_level('DEFENDED', 23, 'cyan')
 
-    def attack(self):
+    def run(self):
         show_current_model(self.model, self.args)
         self.model.eval()
 
         eval_before = EvaluationMetrics(['Top1', 'Top5', 'Time'])
         eval_after = EvaluationMetrics(['Top1', 'Top5', 'Time'])
+        eval_defense = EvaluationMetrics(['Top1', 'Top5', 'Time'])
 
         for step, (images, labels) in enumerate(self.loader):
             st = time.time()
@@ -46,16 +57,11 @@ class Attacker:
                 labels = labels.cuda()
             if self.args.half:
                 images = images.half()
+            adv_images = images.clone()
 
             outputs, _ = self.compute_loss(self.model, images, labels)
             elapsed_time = time.time() - st
             eval_before.update('Time', elapsed_time, self.args.batch_size)
-           
-            st = time.time()
-            adv_images = self.scheme.generate(images, labels)
-            adv_outputs, _ = self.compute_loss(self.model, adv_images, labels)
-            elapsed_time = time.time() - st
-            eval_after.update('Time', elapsed_time, self.args.batch_size)
 
             _, targets = torch.max(labels, 1)
             _, preds = torch.topk(outputs, 5)
@@ -65,16 +71,42 @@ class Attacker:
             eval_before.update('Top1', top1, self.args.batch_size)
             eval_before.update('Top5', top5, self.args.batch_size)
 
-            _, adv_preds = torch.topk(adv_outputs, 5)
-            top1 = (targets == adv_preds[:,0]).float().mean().item()
-            top5 = torch.sum((targets.unsqueeze(1).repeat(1,5) == adv_preds).float(), 1).mean().item()
+            if self.attack is not None:
+                st = time.time()
+                adv_images = self.attack.generate(images, labels)
+                adv_outputs, _ = self.compute_loss(self.model, adv_images, labels)
+                elapsed_time = time.time() - st
+                eval_after.update('Time', elapsed_time, self.args.batch_size)
 
-            eval_after.update('Top1', top1, self.args.batch_size)
-            eval_after.update('Top5', top5, self.args.batch_size)
+                _, adv_preds = torch.topk(adv_outputs, 5)
+                top1 = (targets == adv_preds[:,0]).float().mean().item()
+                top5 = torch.sum((targets.unsqueeze(1).repeat(1,5) == adv_preds).float(), 1).mean().item()
 
+                eval_after.update('Top1', top1, self.args.batch_size)
+                eval_after.update('Top5', top5, self.args.batch_size)
+
+            if self.defense is not None:
+                st = time.time()
+                def_outputs = self.defense.generate(adv_images)
+                elapsed_time = time.time() - st
+                eval_defense.update('Time', elapsed_time, self.args.batch_size)
+
+                _, def_preds = torch.topk(def_outputs, 5)
+                top1 = (targets == def_preds[:,0]).float().mean().item()
+                top5 = torch.sum((targets.unsqueeze(1).repeat(1,5) == def_preds).float(), 1).mean().item()
+
+                eval_defense.update('Top1', top1, self.args.batch_size)
+                eval_defense.update('Top5', top5, self.args.batch_size)
+                
             if (step + 1) % self.args.log_step == 0:
                 self.logger.scalar_summary(eval_before.avg, step + 1, 'ORIGINAL')
-                self.logger.scalar_summary(eval_after.avg, step + 1, 'ATTACKED')
+                if self.attack is not None:
+                    self.logger.scalar_summary(eval_after.avg, step + 1, 'ATTACKED')
+                if self.defense is not None:
+                    self.logger.scalar_summary(eval_defense.avg, step + 1, 'DEFENDED')
 
         self.logger.scalar_summary(eval_before.avg, step + 1, 'ORIGINAL')
-        self.logger.scalar_summary(eval_after.avg, step + 1, 'ATTACKED')
+        if self.attack is not None:
+            self.logger.scalar_summary(eval_after.avg, step + 1, 'ATTACKED')
+        if self.defense is not None:
+            self.logger.scalar_summary(eval_defense.avg, step + 1, 'DEFENDED')

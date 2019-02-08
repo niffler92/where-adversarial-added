@@ -89,7 +89,7 @@ def ace(args, **kwargs):
 
 def ace_resnet50(args, **kwargs):
     assert args.dataset == "ImageNet"
-    global autoencoders, stacks
+    global autoencoders, stacks, shifts
     classifiers = ['resnet50']
     lambdas = [1]
     shifts = [(0,0)]
@@ -97,7 +97,7 @@ def ace_resnet50(args, **kwargs):
 
 def ace_densenet121(args, **kwargs):
     assert args.dataset == "ImageNet"
-    global autoencoders, stacks
+    global autoencoders, stacks, shifts
     classifiers = ['densenet121']
     lambdas = [1]
     shifts = [(0,0)]
@@ -105,7 +105,7 @@ def ace_densenet121(args, **kwargs):
 
 def ace_vgg19(args, **kwargs):
     assert args.dataset == "ImageNet"
-    global autoencoders, stacks
+    global autoencoders, stacks, shifts
     classifiers = ['vgg19']
     lambdas = [1]
     shifts = [(0,0)]
@@ -113,7 +113,7 @@ def ace_vgg19(args, **kwargs):
 
 def ace_vgg19_bn(args, **kwargs):
     assert args.dataset == "ImageNet"
-    global autoencoders, stacks
+    global autoencoders, stacks, shifts
     classifiers = ['vgg19_bn']
     lambdas = [1]
     shifts = [(0,0)]
@@ -122,7 +122,7 @@ def ace_vgg19_bn(args, **kwargs):
 
 def ace_cifar(args, **kwargs):
     assert "CIFAR" in args.dataset
-    global autoencoders, stacks
+    global autoencoders, stacks, shifts
     classifiers = ['ResNet18']
     lambdas = [0.9]
     shifts = [(0,0)]

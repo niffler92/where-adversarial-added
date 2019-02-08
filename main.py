@@ -15,6 +15,7 @@ import dataloader
 from common.logger import Logger
 import submodules.models as models
 import submodules.attacks as attacks
+import submodules.defenses as defenses
 
 
 logger = Logger("common")
@@ -44,7 +45,7 @@ def main(args, scope):
     elif args.mode == 'attack':
         logger.log("Experiment start!")
         attacker = Attacker(val_loader, args)
-        attacker.attack()
+        attacker.run()
         logger.log("Experiment end!")
 
 
@@ -52,10 +53,11 @@ if __name__ == '__main__':
     dataset_names = sorted(name for name in dir(dataloader))
     model_names = sorted(name for name in dir(models))
     attack_names = sorted(name for name in dir(attacks))
+    defense_names = sorted(name for name in dir(defenses))
 
     parser = argparse.ArgumentParser(description='ACE Defense on NSML')
     parser.add_argument("--mode", default='train', type=str,
-                        choices=['train', 'attack', 'infer'])
+                        choices=['train', 'infer', 'attack'])
     parser.add_argument("--seed", default=500, type=int)
 
     # Log options
@@ -107,7 +109,7 @@ if __name__ == '__main__':
                         help="whether to use a pretrained model." + \
                         "the model must be saved in the checkpoint directory.")
     
-    parser.add_argument('--recon_ratio', default=0.1, type=float,
+    parser.add_argument('--recon_ratio', default=0.0, type=float,
                         help="ratio between classification loss and reconstruction loss")
     
     parser.add_argument('--adv_ratio', default=None, type=float,
@@ -127,6 +129,10 @@ if __name__ == '__main__':
                         help='available algorithms: ' + ' | '.join(attack_names))
     parser.add_argument('--ckpt_src', default=None, type=str,
                         help='Name of the checkpoint file for the source model')
+
+    parser.add_argument('--defense', default=None, type=str, choices=defense_names,
+                        help='available algorithms: ' + ' | '.join(defense_names))
+
 
     args = parser.parse_args()
     args.cuda = torch.cuda.is_available()

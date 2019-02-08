@@ -7,3 +7,6 @@ sys.path.append(os.path.join(settings.PROJECT_ROOT.as_posix(), 'submodules/attac
 from pgd import *
 from noise import *
 from jsma import *
+from deepfool import *
+from onepixel import *
+from cnw import *

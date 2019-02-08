@@ -60,7 +60,6 @@ class Trainer:
         self.eval()
 
     def train_epoch(self):
-        self.model.train()
         eval_metrics = EvaluationMetrics(['Loss', 'Top1', 'Top5', 'Time'])
 
         for i, (images, labels) in enumerate(self.loader):
@@ -74,6 +73,7 @@ class Trainer:
 
             # adversarial training with soft labels
             if self.args.adv_ratio is not None:
+                self.model.eval()
                 k = int(len(images)*self.args.adv_ratio)
                 adv_images = self.scheme.generate(images[:k], labels[:k])
                 adv_outputs = self.model(adv_images)
@@ -87,6 +87,7 @@ class Trainer:
                 images[:k] = adv_images.detach()
                 labels[:k] = adv_labels.detach()
 
+            self.model.train()
             outputs, loss = self.compute_loss(self.model, images, labels)
 
             self.optimizer.zero_grad()
@@ -156,8 +157,10 @@ class Trainer:
         if self.args.model in dir(ace):
             if self.args.multigpu:
                 autoencoders = self.model.module.autoencoders
+                classifiers = self.model.module.classifiers
             else:
                 autoencoders = self.model.autoencoders
+                classifiers = self.model.classifiers
 
             for autoencoder in autoencoders:
                 name = autoencoder.__class__.__name__.lower()
@@ -166,6 +169,16 @@ class Trainer:
                     'model': autoencoder.state_dict(),
                     'args': self.args
                 }, filename)
+            
+            if self.args.fine_tune:
+                for classifier in classifiers:
+                    name = classifier.__class__.__name__.lower()
+                    filename = os.path.join(self.log_path, '{}-{}.pth'.format(name, self.epoch))
+                    torch.save({
+                        'model': classifier.state_dict(),
+                        'args': self.args
+                    }, filename)
+
         else:
             name = self.args.model
             filename = os.path.join(self.log_path, '{}-{}.pth'.format(name, self.epoch))

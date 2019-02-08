@@ -23,27 +23,11 @@ def get_model(args):
     else:
         model = getattr(models, model_name)(args)
 
-    if model_name not in dir(torch_models) + dir(ace):
+    if model_name not in dir(ace):
         if args.pretrained:
             # Default checkpoint name to model name
             ckpt_name = model_name if args.ckpt_name is None else args.ckpt_name
-
-            if NSML_NFS_OUTPUT:
-                path = os.path.join(NSML_NFS_OUTPUT, args.ckpt_dir)
-                ckpt_name = MODEL_PATH_DICT.get(ckpt_name, ckpt_name)
-            else:
-                path = os.path.join(PROJECT_ROOT, args.ckpt_dir)
-
-            found = False
-            for root, _, filenames in os.walk(path):
-                for filename in filenames:
-                    if ckpt_name == filename:
-                        found = True
-                        path = os.path.join(root, filename)
-                        break
-                if found: break
-            assert found, "Cannot find checkpoint file"
-
+            path = os.path.join(PROJECT_ROOT, args.ckpt_dir, ckpt_name)
             ckpt = torch.load(path, map_location=lambda storage, loc: storage)
             model_state = ckpt['model']
 
@@ -56,7 +40,7 @@ def get_model(args):
                     model_state_cpu[k] = model_state[k]
             model.load_state_dict(model_state_cpu)
 
-        else:
+        elif model_name not in dir(torch_models):
             init_params(model, args=args)
 
     model.cuda() if args.cuda else model.cpu()

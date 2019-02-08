@@ -7,6 +7,7 @@ setup(
         'pillow',
         'termcolor',
         'torch>=1.0.0',
-        'torchvision'
+        'torchvision',
+        'scikit-image',
     ]
 )
