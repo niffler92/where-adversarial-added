@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import torchvision.transforms as transforms
 
 __all__ = ['randomization']
 
@@ -21,16 +20,15 @@ class Randomization:
         return self.model(def_imgs)
 
     def generate_sample(self, image):
-        w = int(image.size(-2)*(1 - np.random.uniform()*(1 - self.scale)))
-        h = int(image.size(-1)*(1 - np.random.uniform()*(1 - self.scale)))
-        resized = self.resize(image, w, h)
+        w_factor = 1 - np.random.uniform()*(1 - self.scale)
+        h_factor = 1 - np.random.uniform()*(1 - self.scale)
+        resized = F.interpolate(image.unsqueeze(0), scale_factor=(w_factor, h_factor), mode=self.mode)
 
         w_diff = image.size(-2) - resized.size(-2)
         h_diff = image.size(-1) - resized.size(-1)
         
         padded = self.pad(self.get_pad_shape(w_diff, h_diff))(resized)
         padded = padded.squeeze(0)
-        
         return padded
 
     def get_padding(self, pad_type):
@@ -42,22 +40,9 @@ class Randomization:
             return nn.ZeroPad2d
 
     def get_pad_shape(self, w_diff, h_diff):
-        w = np.random.choice(np.arange(-w_diff, w_diff+1))
-        h = np.random.choice(np.arange(-h_diff, h_diff+1))
-        left = int((w > 0)*w)
-        up = int((h > 0)*h)
-        return (left, w_diff - left, up, h_diff - up)
-
-    def resize(self, image, w, h):
-        transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((h, w)),
-            transforms.ToTensor()
-        ])
-        resized = transform(image.cpu())
-        if self.args.cuda:
-            resized = resized.cuda()
-        return resized
+        w = np.random.choice(np.arange(w_diff+1))
+        h = np.random.choice(np.arange(h_diff+1))
+        return (h, h_diff - h, w, w_diff - w)
 
 
 def randomization(model, args, **kwargs):

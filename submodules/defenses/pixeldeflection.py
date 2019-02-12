@@ -1,4 +1,3 @@
-from argparse import Namespace
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -92,7 +91,7 @@ class PixelDeflection:
             weights.append(F.adaptive_max_pool2d(output, (1,1)))
         handle = self.model._modules.get(last_conv).register_forward_hook(hook_weights)
 
-        args = Namespace(**vars(self.args))
+        args = self.args
         args.batch_size = 1
         train_loader, _ = get_loader(args)
         for i, (image, label) in enumerate(train_loader):
@@ -101,14 +100,16 @@ class PixelDeflection:
                 label = label.cuda()
             if self.args.half:
                 image = image.half()
-            
+
             weights = []
-            _ = self.model(image)
+            with torch.no_grad():
+                _ = self.model(image)
             weights = weights[0].squeeze()
-            label = label.squeeze()[0]
-            self.weights.update(label, weights)
+            _, label = torch.max(label, dim=1)
+            self.weights.update(label.item(), weights)
             if (i+1)%1000 == 0:
                 print("{:5.1f}% ({}/{})".format((i+1)/len(train_loader)*100, i+1, len(train_loader)))
+        print("Created CAM for {}".format(self.args.model))
         handle.remove()
 
     def get_rcam(self, image, k=1):
@@ -125,7 +126,7 @@ class PixelDeflection:
             features.append(output)
         handle = self.model._modules.get(last_conv).register_forward_hook(hook_feature)
         outputs = self.model(image.unsqueeze(0))
-        outputs = outputs.detach.cpu().numpy().squeeze()
+        outputs = outputs.detach().cpu().numpy().squeeze()
         handle.remove()
 
         features = features[0]
@@ -146,7 +147,8 @@ class PixelDeflection:
             else:
                 rcam += cams[label]/float(2**(idx+1))
         rcam = (rcam - torch.min(rcam))/(torch.max(rcam) - torch.min(rcam))
-        rcam = to_np(rcam).squeeze()
+        rcam = rcam.squeeze()
+        rcam = rcam.detach().cpu().numpy()
 
         return rcam
 

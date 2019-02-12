@@ -5,8 +5,8 @@ import torch.nn as nn
 import torchvision.models as torch_models
 from common.torch_utils import get_model
 
-__all__ = ['ace', 'ace_resnet50', 'ace_densenet121', 'ace_vgg19', 'ace_vgg19_bn']
-__all__ += ['ace_cifar']
+__all__ = ['ace', 'ace_resnet50', 'ace_resnet101', 'ace_densenet121', 'ace_vgg19', 'ace_vgg19_bn']
+__all__ += ['ace_cifar', 'ace_cifar_random']
 
 
 class ACE(nn.Module):
@@ -79,7 +79,7 @@ classifiers = ['densenet121', 'resnet50', 'vgg19', 'vgg19_bn']
 autoencoders = ['unet']
 stacks = [1]
 lambdas = [0, 0.5, 0.7, 0.9, 0.99, 1]
-shifts = [(0,0), (0,1), (1,0), (0,-1), (-1,0), (1,1), (-1, -1), (1,-1), (-1,1)]
+shifts = [(0,1), (1,0), (0,-1), (-1,0), (1,1), (-1, -1), (1,-1), (-1,1)]
 
 
 def ace(args, **kwargs):
@@ -91,6 +91,14 @@ def ace_resnet50(args, **kwargs):
     assert args.dataset == "ImageNet"
     global autoencoders, stacks, shifts
     classifiers = ['resnet50']
+    lambdas = [1]
+    shifts = [(0,0)]
+    return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
+
+def ace_resnet101(args, **kwargs):
+    assert args.dataset == "ImageNet"
+    global autoencoders, stacks, shifts
+    classifiers = ['resnet101']
     lambdas = [1]
     shifts = [(0,0)]
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
@@ -122,8 +130,15 @@ def ace_vgg19_bn(args, **kwargs):
 
 def ace_cifar(args, **kwargs):
     assert "CIFAR" in args.dataset
+    global autoencoders, stacks
+    classifiers = ['ResNet18']
+    lambdas = [1.0]
+    shifts = [(0,0)]
+    return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
+
+def ace_cifar_random(args, **kwargs):
+    assert "CIFAR" in args.dataset
     global autoencoders, stacks, shifts
     classifiers = ['ResNet18']
-    lambdas = [0.9]
-    shifts = [(0,0)]
+    lambdas = [1.0]
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
