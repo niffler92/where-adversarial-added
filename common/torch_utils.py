@@ -23,7 +23,7 @@ def get_model(args):
     else:
         model = getattr(models, model_name)(args)
 
-    if model_name not in dir(ace):
+    if model_name not in dir(ace) + dir(torch_models):
         if args.pretrained:
             # Default checkpoint name to model name
             ckpt_name = model_name if args.ckpt_name is None else args.ckpt_name
@@ -40,7 +40,7 @@ def get_model(args):
                     model_state_cpu[k] = model_state[k]
             model.load_state_dict(model_state_cpu)
 
-        elif model_name not in dir(torch_models):
+        else:
             init_params(model, args=args)
 
     model.cuda() if args.cuda else model.cpu()

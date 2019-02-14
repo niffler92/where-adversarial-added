@@ -25,10 +25,10 @@ class Trainer:
             if self.args.source is not None:
                 args.model = self.args.source
                 args.ckpt_name = self.args.ckpt_src
-                source, _ = get_model(args)
+                self.source, _ = get_model(args)
             else:
-                source = self.model
-            self.scheme = getattr(attacks, self.args.attack)(source, args)
+                self.source = self.model
+            self.scheme = getattr(attacks, self.args.attack)(self.source, args)
 
         self.epochs = self.args.epochs
         self.total_step = len(self.loader) * self.args.epochs
@@ -71,25 +71,44 @@ class Trainer:
             if self.args.half:
                 images = images.half()
 
-            # adversarial training with soft labels
-            if self.args.adv_ratio is not None:
-                self.model.eval()
-                k = int(len(images)*self.args.adv_ratio)
-                adv_images = self.scheme.generate(images[:k], labels[:k])
-                adv_outputs = self.model(adv_images)
-
-                soft_labels = softmax(adv_outputs, self.args.distill_T)
-                if self.args.cuda:
-                    soft_labels = soft_labels.cuda()
-                soft_ratio = self.args.distill_ratio
-                adv_labels = soft_ratio*soft_labels + (1 - soft_ratio)*labels[:k]
-
-                images[:k] = adv_images.detach()
-                labels[:k] = adv_labels.detach()
-
             self.model.train()
             outputs, loss = self.compute_loss(self.model, images, labels)
 
+            # adversarial training with soft labels
+            if self.args.adv_ratio is not None:
+                self.source.eval()
+                adv_images = self.scheme.generate(images, labels)
+                adv_outputs = self.model(adv_images)
+
+                if 'noise' in self.args.attack:
+                    bs = self.args.batch_size
+                    if 'linf' in self.args.attack:
+                        cond_input, _ = torch.max(torch.abs(images).view(bs,-1), dim=1)
+                        cond_output, _ = torch.max(torch.abs(outputs).view(bs,-1), dim=1)
+                        cond_diff, _ = torch.max(torch.abs(adv_outputs - outputs).view(bs,-1), dim=1)
+
+                    elif 'l2' in self.args.attack:
+                        cond_input = torch.norm(images.view(bs,-1), dim=1)
+                        cond_output = torch.norm(outputs.view(bs,-1), dim=1)
+                        cond_diff = torch.norm((adv_outputs - outputs).view(bs,-1), dim=1)
+
+                    cond_loss = (cond_diff/self.scheme.eps)*(cond_input/cond_output)
+                    cond_loss = torch.max(cond_loss)
+                    cond_ratio = self.args.adv_ratio
+                    loss = cond_ratio*cond_loss + (1 - cond_ratio)*loss
+
+                else:
+                    soft_labels = softmax(adv_outputs, self.args.distill_T)
+                    if self.args.cuda:
+                        soft_labels = soft_labels.cuda()
+                    soft_ratio = self.args.distill_ratio
+                    adv_labels = soft_ratio*soft_labels + (1 - soft_ratio)*labels
+
+                    _, adv_loss = self.compute_loss(self.model, adv_images, adv_labels)
+                    adv_ratio = self.args.adv_ratio
+                    loss = adv_ratio*adv_loss + (1 - adv_ratio)*loss
+
+            self.model.train()
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()

@@ -118,11 +118,12 @@ if __name__ == '__main__':
                         help="ratio between the true label and soft label")
     parser.add_argument('--distill_T', default=0, type=float,
                         help="temperature for creating soft labels")
-
     parser.add_argument('--mixup', default=None, type=float,
                         help="alpha for mixup training")
+    
     parser.add_argument('--fine_tune', action='store_true',
                         help="fine-tune the classifier attached to ace module")
+
 
     # Attack options
     parser.add_argument('--attack', default=None, type=str, choices=attack_names,
