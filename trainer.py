@@ -14,8 +14,9 @@ from common.utils import get_dirname, show_current_model
 
 
 class Trainer:
-    def __init__(self, dataloader, args):
-        self.loader = dataloader
+    def __init__(self, train_loader, val_loader, args):
+        self.train_loader = train_loader
+        self.val_loader = val_loader
         self.args = Namespace(**vars(args))
 
         self.model, self.compute_loss = get_model(self.args)
@@ -31,7 +32,6 @@ class Trainer:
             self.scheme = getattr(attacks, self.args.attack)(self.source, args)
 
         self.epochs = self.args.epochs
-        self.total_step = len(self.loader) * self.args.epochs
         self.step = 0
         self.epoch = 0
         self.start_epoch = 1
@@ -64,7 +64,7 @@ class Trainer:
     def train_epoch(self):
         eval_metrics = EvaluationMetrics(['Loss', 'Top1', 'Top5', 'Time'])
 
-        for i, (images, labels) in enumerate(self.loader):
+        for i, (images, labels) in enumerate(self.train_loader):
             st = time.time()
             self.step += 1
             if self.args.cuda:
@@ -73,42 +73,21 @@ class Trainer:
             if self.args.half:
                 images = images.half()
 
-            self.model.train()
-            outputs, loss = self.compute_loss(self.model, images, labels)
-
             # adversarial training with soft labels
             if self.args.adv_ratio is not None:
                 self.source.eval()
-                adv_images = self.scheme.generate(images, labels)
+                k = int(len(images)*self.args.adv_ratio)
+                adv_images = self.scheme.generate(images[:k], labels[:k])
                 adv_outputs = self.model(adv_images)
 
-                if 'noise' in self.args.attack:
-                    bs = self.args.batch_size
-                    if 'linf' in self.args.attack:
-                        cond_input, _ = torch.max(torch.abs(images).view(bs,-1), dim=1)
-                        cond_output, _ = torch.max(torch.abs(outputs).view(bs,-1), dim=1)
-                        cond_diff, _ = torch.max(torch.abs(adv_outputs - outputs).view(bs,-1), dim=1)
+                soft_labels = softmax(adv_outputs, self.args.distill_T)
+                if self.args.cuda:
+                    soft_labels = soft_labels.cuda()
+                soft_ratio = self.args.distill_ratio
+                adv_labels = soft_ratio*soft_labels + (1 - soft_ratio)*labels
 
-                    elif 'l2' in self.args.attack:
-                        cond_input = torch.norm(images.view(bs,-1), dim=1)
-                        cond_output = torch.norm(outputs.view(bs,-1), dim=1)
-                        cond_diff = torch.norm((adv_outputs - outputs).view(bs,-1), dim=1)
-
-                    cond_loss = (cond_diff/self.scheme.eps)*(cond_input/cond_output)
-                    cond_loss = torch.mean(cond_loss)
-                    cond_ratio = self.args.adv_ratio
-                    loss = cond_ratio*cond_loss + (1 - cond_ratio)*loss
-
-                else:
-                    soft_labels = softmax(adv_outputs, self.args.distill_T)
-                    if self.args.cuda:
-                        soft_labels = soft_labels.cuda()
-                    soft_ratio = self.args.distill_ratio
-                    adv_labels = soft_ratio*soft_labels + (1 - soft_ratio)*labels
-
-                    _, adv_loss = self.compute_loss(self.model, adv_images, adv_labels)
-                    adv_ratio = self.args.adv_ratio
-                    loss = adv_ratio*adv_loss + (1 - adv_ratio)*loss
+                images[:k] = adv_images
+                labels[:k] = adv_labels
 
             self.model.train()
             self.optimizer.zero_grad()
@@ -141,7 +120,7 @@ class Trainer:
         self.model.eval()
         eval_metrics = EvaluationMetrics(['Loss', 'Top1', 'Top5', 'Time'])
 
-        for i, (images, labels) in enumerate(self.loader):
+        for i, (images, labels) in enumerate(self.val_loader):
             st = time.time()
             self.step += 1
             if self.args.cuda:

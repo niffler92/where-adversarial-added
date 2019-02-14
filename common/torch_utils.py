@@ -27,7 +27,8 @@ def get_model(args):
         if args.pretrained:
             # Default checkpoint name to model name
             ckpt_name = model_name if args.ckpt_name is None else args.ckpt_name
-            path = os.path.join(PROJECT_ROOT, args.ckpt_dir, ckpt_name)
+            root = NSML_NFS_OUTPUT if NSML_NFS_OUTPUT else PROJECT_ROOT
+            path = os.path.join(root, args.ckpt_dir, ckpt_name)
             ckpt = torch.load(path, map_location=lambda storage, loc: storage)
             model_state = ckpt['model']
 

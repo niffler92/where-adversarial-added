@@ -32,13 +32,13 @@ def main(args, scope):
 
     if args.mode == 'train':
         logger.log("Training start!")
-        trainer = Trainer(train_loader, args)
+        trainer = Trainer(train_loader, val_loader, args)
         trainer.train()
         logger.log("Training end!")
 
     elif args.mode == 'infer':
         logger.log("Evaluation start!")
-        trainer = Trainer(val_loader, args)
+        trainer = Trainer(None, val_loader, args)
         trainer.infer()
         logger.log("Evaluation end!")
 
