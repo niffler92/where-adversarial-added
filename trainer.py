@@ -41,7 +41,7 @@ class Trainer:
         self.logger = Logger(self.args.mode, self.log_path, self.args.verbose)
         self.logger.log("Logs will be saved in {}".format(self.log_path))
 
-        self.logger.add_level('STEP', 21, 'green')
+        self.logger.add_level('STEP', 21, 'white')
         self.logger.add_level('EPOCH', 22, 'cyan')
         self.logger.add_level('EVAL', 23, 'green')
 
@@ -54,6 +54,8 @@ class Trainer:
             self.adjust_learning_rate([int(self.args.epochs/2), int(self.args.epochs*3/4)], factor=0.1)
             self.train_epoch()
             self.save()
+            if not self.args.no_eval:
+                self.eval()
 
     def infer(self):
         show_current_model(self.model, self.args)
@@ -93,7 +95,7 @@ class Trainer:
                         cond_diff = torch.norm((adv_outputs - outputs).view(bs,-1), dim=1)
 
                     cond_loss = (cond_diff/self.scheme.eps)*(cond_input/cond_output)
-                    cond_loss = torch.max(cond_loss)
+                    cond_loss = torch.mean(cond_loss)
                     cond_ratio = self.args.adv_ratio
                     loss = cond_ratio*cond_loss + (1 - cond_ratio)*loss
 
@@ -166,8 +168,9 @@ class Trainer:
             eval_metrics.update('Top1', top1, self.args.batch_size)
             eval_metrics.update('Top5', top5, self.args.batch_size)
             eval_metrics.update('Time', elapsed_time, self.args.batch_size)
-            
-            if self.step % self.args.log_step == 0:
+
+            # No step summaries when training
+            if self.step % self.args.log_step == 0 and self.args.mode == 'infer':
                 self.logger.scalar_summary(eval_metrics.avg, self.step, 'EVAL')
 
         self.logger.scalar_summary(eval_metrics.avg, self.step, 'EVAL')

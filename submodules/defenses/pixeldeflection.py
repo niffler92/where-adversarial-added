@@ -108,8 +108,8 @@ class PixelDeflection:
             _, label = torch.max(label, dim=1)
             self.weights.update(label.item(), weights)
             if (i+1)%1000 == 0:
-                print("{:5.1f}% ({}/{})".format((i+1)/len(train_loader)*100, i+1, len(train_loader)))
-        print("Created CAM for {}".format(self.args.model))
+                print("\r{:5.1f}% ({}/{})".format((i+1)/len(train_loader)*100, i+1, len(train_loader)), end="")
+        print("\rCreated CAM for {}".format(self.args.model), end="")
         handle.remove()
 
     def get_rcam(self, image, k=1):

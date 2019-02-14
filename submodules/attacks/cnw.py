@@ -32,7 +32,7 @@ class CnW:
         images = denormalize(images, self.args.dataset)
         _, labels = torch.max(labels, dim=1)
         
-        outer_adv_images = images.data.clone()
+        outer_adv_images = images.clone()
         outer_Lp = torch.ones(images.size(0)) * 1e10
         if self.args.cuda: 
             outer_Lp = outer_Lp.cuda()

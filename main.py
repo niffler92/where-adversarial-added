@@ -109,9 +109,11 @@ if __name__ == '__main__':
                         help="whether to use a pretrained model." + \
                         "the model must be saved in the checkpoint directory.")
     
+    parser.add_argument('--no_eval', action='store_true',
+                        help="no evaluation on the validation set")
     parser.add_argument('--recon_ratio', default=0.0, type=float,
                         help="ratio between classification loss and reconstruction loss")
-    
+
     parser.add_argument('--adv_ratio', default=None, type=float,
                         help="ratio between original loss and adversarial loss")
     parser.add_argument('--distill_ratio', default=0, type=float,
@@ -150,5 +152,6 @@ if __name__ == '__main__':
         args.num_classes = 1000
     else:
         args.num_classes = None
+        args.no_eval = True
 
     main(args, scope=locals())
