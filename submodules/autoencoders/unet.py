@@ -214,13 +214,13 @@ class UNet(nn.Module):
             self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(1,2), padding=1, output_padding=(0,1))
         elif config == 3:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=(1,2), stride=(2,4))
-            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(2,4), padding=1, output_padding=(0,1))
+            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(2,4), padding=1, output_padding=(1,3))
         elif config == 4:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=(2,1), stride=(4,2))
-            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(4,2), padding=1, output_padding=(1,0))
+            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(4,2), padding=1, output_padding=(3,1))
         elif config == 5:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=2, stride=4)
-            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(4,2), padding=1, output_padding=(1,0))
+            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=4, padding=1, output_padding=3)
 
     def forward(self, x):
         x = self.first_conv(x)
@@ -229,17 +229,13 @@ class UNet(nn.Module):
         # encoder pathway, save outputs for merging
         for i, module in enumerate(self.down_convs):
             x, before_pool = module(x)
-            print("from_down: {}".format(before_pool.shape))
             encoder_outs.append(before_pool)
 
         for i, module in enumerate(self.up_convs):
-            print("from_up: {}".format(x.shape))
             before_pool = encoder_outs[-(i+2)]
             x = module(before_pool, x)
 
         out = self.last_conv(x)
-        print("out: {}".format(out.shape))
-
         return out
 
 
@@ -257,10 +253,10 @@ def unet_v2(args, **kwargs):
     return UNet(config=2, args=args, **kwargs)
 
 def unet_v3(args, **kwargs):
-    return UNet(config=3, args=args, **kwargs)
+    return UNet(config=3, depth=4, args=args, **kwargs)
 
 def unet_v4(args, **kwargs):
-    return UNet(config=4, args=args, **kwargs)
+    return UNet(config=4, depth=4, args=args, **kwargs)
 
 def unet_v5(args, **kwargs):
-    return UNet(config=5, args=args, **kwargs)
+    return UNet(config=5, depth=4, args=args, **kwargs)
