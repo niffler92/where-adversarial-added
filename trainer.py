@@ -87,7 +87,7 @@ class Trainer:
                 if self.args.cuda:
                     soft_labels = soft_labels.cuda()
                 soft_ratio = self.args.distill_ratio
-                adv_labels = soft_ratio*soft_labels + (1 - soft_ratio)*labels
+                adv_labels = soft_ratio*soft_labels + (1 - soft_ratio)*labels[:k]
 
                 images[:k] = adv_images
                 labels[:k] = adv_labels
