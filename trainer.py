@@ -77,12 +77,10 @@ class Trainer:
                 images = images.half()
                 labels = labels.half()
 
-            self.model.train()
-            outputs, loss = self.compute_loss(self.model, images, labels)
-
             # adversarial training with soft labels
             if self.args.adv_ratio is not None:
-                adv_images = self.scheme.generate(images, labels)
+                k = int(images.size(0)*self.args.adv_ratio)
+                adv_images = self.scheme.generate(images[:k], labels[:k])
                 adv_outputs = self.model(adv_images)
 
                 soft_labels = softmax(adv_outputs, self.args.distill_T)
@@ -91,11 +89,11 @@ class Trainer:
                 soft_ratio = self.args.distill_ratio
                 adv_labels = soft_ratio*soft_labels + (1 - soft_ratio)*labels
 
-                self.model.train()
-                _, adv_loss = self.compute_loss(self.model, adv_images, adv_labels)
-                adv_ratio = self.args.adv_ratio
-                loss = adv_ratio*adv_loss + (1 - adv_ratio)*loss
+                images[:k] = adv_images
+                labels[:k] = adv_labels
 
+            self.model.train()
+            outputs, loss = self.compute_loss(self.model, images, labels)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
