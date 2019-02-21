@@ -154,7 +154,7 @@ def mixup(criterion, model, images, labels, args=None):
         idx = torch.randperm(args.batch_size)
         if args.cuda:
             idx = idx.cuda()
-        
+
         images = lam*images + (1 - lam)*images[idx,:,:,:]
         outputs = model(images)
         loss = lam*criterion(outputs, labels) + (1 - lam)*criterion(outputs, labels[idx,:])

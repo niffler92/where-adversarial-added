@@ -63,7 +63,18 @@ def main(args, scope):
             logger.log("="*10 + " lambda: {:.3f} ".format(l) + "="*10)
             trainer.infer()
         logger.log("Finished!")
-    
+
+    elif args.mode == 'occlusion':
+        logger.log("Print accuracy for range of occlusion ratios")
+        args.attack = 'occ_center'
+        attacker = Attacker(val_loader, args)
+        ratios = np.linspace(0,1,11)
+        for r in ratios:
+            attacker.attack.ratio = r
+            logger.log("="*10 + " ratio: {:.2f} ".format(r) + "="*10)
+            attacker.run()
+        logger.log("Finished!")
+
     else:
         raise NotImplementedError
 
