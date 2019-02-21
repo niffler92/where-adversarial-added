@@ -13,6 +13,7 @@ from attacker import Attacker
 
 import dataloader
 from common.logger import Logger
+from common.utils import show_current_model
 import submodules.models as models
 import submodules.attacks as attacks
 import submodules.defenses as defenses
@@ -29,24 +30,42 @@ def main(args, scope):
     torch.cuda.manual_seed(SEED)
 
     train_loader, val_loader = dataloader.get_loader(args)
-
     if args.mode == 'train':
         logger.log("Training start!")
         trainer = Trainer(train_loader, val_loader, args)
+        if args.verbose <= 10:
+            show_current_model(trainer.model, args)
         trainer.train()
         logger.log("Training end!")
 
     elif args.mode == 'infer':
         logger.log("Evaluation start!")
         trainer = Trainer(None, val_loader, args)
+        if args.verbose <= 10:
+            show_current_model(trainer.model, args)
         trainer.infer()
         logger.log("Evaluation end!")
 
     elif args.mode == 'attack':
         logger.log("Experiment start!")
         attacker = Attacker(val_loader, args)
+        if args.verbose <= 10:
+            show_current_model(attacker.model, args)
         attacker.run()
         logger.log("Experiment end!")
+
+    elif args.mode == 'print_accuracy':
+        logger.log("Print accuracy for range of lambdas")
+        trainer = Trainer(None, val_loader, args)
+        lambdas = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 0.999, 1.0]
+        for l in lambdas:
+            trainer.model.lambdas = [l]
+            logger.log("="*10 + " lambda: {:.3f} ".format(l) + "="*10)
+            trainer.infer()
+        logger.log("Finished!")
+    
+    else:
+        raise NotImplementedError
 
 
 if __name__ == '__main__':
@@ -56,8 +75,7 @@ if __name__ == '__main__':
     defense_names = sorted(name for name in dir(defenses))
 
     parser = argparse.ArgumentParser(description='ACE Defense on NSML')
-    parser.add_argument("--mode", default='train', type=str,
-                        choices=['train', 'infer', 'attack'])
+    parser.add_argument("--mode", default=None, type=str)
     parser.add_argument("--seed", default=500, type=int)
 
     # Log options

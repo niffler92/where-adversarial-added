@@ -8,6 +8,7 @@ import numpy as np
 from dataloader import data_stats
 
 __all__ = ['unet', 'unet_mnist']
+__all__ += ['unet_v1', 'unet_v2', 'unet_v3', 'unet_v4', 'unet_v5']
 
 
 def conv3x3(in_channels, out_channels, stride=1,
@@ -137,8 +138,8 @@ class UNet(nn.Module):
     """
 
     def __init__(self, in_channels=3, depth=5,
-                 start_filts=64, up_mode='transpose',
-                 merge_mode='concat', args=None, **kwargs):
+                 start_filts=64, up_mode='transpose', merge_mode='concat',
+                 config=0, args=None, **kwargs):
         """
         Arguments:
             in_channels: int, number of channels in the input tensor.
@@ -199,11 +200,27 @@ class UNet(nn.Module):
                 merge_mode=merge_mode)
             self.up_convs.append(up_conv)
 
-        # add the list of modules to current module
-        self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=2)
         self.down_convs = nn.ModuleList(self.down_convs)
         self.up_convs = nn.ModuleList(self.up_convs)
-        self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=2, padding=1, output_padding=1)
+
+        if config == 0:
+            self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=2)
+            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=2, padding=1, output_padding=1)
+        elif config == 1:
+            self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=(2,1))
+            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(2,1), padding=1, output_padding=(1,0))
+        elif config == 2:
+            self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=(1,2))
+            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(1,2), padding=1, output_padding=(0,1))
+        elif config == 3:
+            self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=(1,2), stride=(2,4))
+            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(2,4), padding=1, output_padding=(0,1))
+        elif config == 4:
+            self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=(2,1), stride=(4,2))
+            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(4,2), padding=1, output_padding=(1,0))
+        elif config == 5:
+            self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=2, stride=4)
+            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(4,2), padding=1, output_padding=(1,0))
 
     def forward(self, x):
         x = self.first_conv(x)
@@ -212,16 +229,17 @@ class UNet(nn.Module):
         # encoder pathway, save outputs for merging
         for i, module in enumerate(self.down_convs):
             x, before_pool = module(x)
+            print("from_down: {}".format(before_pool.shape))
             encoder_outs.append(before_pool)
 
         for i, module in enumerate(self.up_convs):
+            print("from_up: {}".format(x.shape))
             before_pool = encoder_outs[-(i+2)]
             x = module(before_pool, x)
 
-        # No softmax is used. This means you need to use
-        # nn.CrossEntropyLoss is your training script,
-        # as this module includes a softmax already.
         out = self.last_conv(x)
+        print("out: {}".format(out.shape))
+
         return out
 
 
@@ -230,3 +248,19 @@ def unet(args, **kwargs):
 
 def unet_mnist(args, **kwargs):
     return UNet(in_channels=1, depth=2, args=args, **kwargs)
+
+
+def unet_v1(args, **kwargs):
+    return UNet(config=1, args=args, **kwargs)
+
+def unet_v2(args, **kwargs):
+    return UNet(config=2, args=args, **kwargs)
+
+def unet_v3(args, **kwargs):
+    return UNet(config=3, args=args, **kwargs)
+
+def unet_v4(args, **kwargs):
+    return UNet(config=4, args=args, **kwargs)
+
+def unet_v5(args, **kwargs):
+    return UNet(config=5, args=args, **kwargs)

@@ -19,6 +19,7 @@ class DeepFool:
         self.eps = 10e-5
 
     def generate(self, images, labels):
+        self.model.eval()
         self.original_shape = images[0].shape
         adv_imgs = [self.generate_sample(image, label) for (image, label)
                     in zip(images, labels)]
@@ -62,7 +63,9 @@ class DeepFool:
             niter += 1
             adv_label = torch.max(self.model(adv_img), 1)[1][0]
 
-        return image + r_sum
+        adv_img = image + r_sum
+
+        return adv_img.detach()
 
     def get_label_grad(self, image, label):
         image = image.clone()

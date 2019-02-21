@@ -28,6 +28,7 @@ class OnePixel:
     def generate(self, images, labels):
         """Generate adversarial images
         """
+        self.model.eval()
         _, preds = torch.max(self.model(images), dim=1)
         images = denormalize(images, self.args.dataset)*255
         bounds = [(0, images[0].size(1)-1), (0, images[0].size(2)-1),

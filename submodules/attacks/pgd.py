@@ -5,8 +5,8 @@ from dataloader import normalize, denormalize
 from common.torch_utils import cross_entropy
 
 __all__ = ['fgsm']
-__all__ += ['pgd_linf_100', 'pgd_linf_1000']
-__all__ += ['pgd_l2_100', 'pgd_l2_1000']
+__all__ += ['pgd_linf_10', 'pgd_linf_100', 'pgd_linf_1000']
+__all__ += ['pgd_l2_10', 'pgd_l2_20', 'pgd_l2_100', 'pgd_l2_1000']
 
 
 class PGD:
@@ -22,6 +22,7 @@ class PGD:
         self.criterion = cross_entropy
 
     def generate(self, images, labels):
+        self.model.eval()
         adv_images = images.clone()
         for i in range(self.max_iter):
             adv_images.requires_grad_()
@@ -48,11 +49,20 @@ class PGD:
 def fgsm(model, args, **kwargs):
     return PGD(model, max_iter=1, alpha=1e3, max_clip=0.031, args=args, **kwargs)
 
+def pgd_linf_10(model, args, **kwargs):
+    return PGD(model, max_iter=10, alpha=0.1, max_clip=0.031, args=args, **kwargs)
+
 def pgd_linf_100(model, args, **kwargs):
     return PGD(model, max_iter=100, alpha=0.1, max_clip=0.031, args=args, **kwargs)
 
 def pgd_linf_1000(model, args, **kwargs):
     return PGD(model, max_iter=1000, alpha=0.1, max_clip=0.031, args=args, **kwargs)
+
+def pgd_l2_10(model, args, **kwargs):
+    return PGD(model, max_iter=10, alpha=0.1, max_clip=0.031, norm='L2', args=args, **kwargs)
+
+def pgd_l2_20(model, args, **kwargs):
+    return PGD(model, max_iter=20, alpha=0.1, max_clip=0.031, norm='L2', args=args, **kwargs)
 
 def pgd_l2_100(model, args, **kwargs):
     return PGD(model, max_iter=100, alpha=0.1, max_clip=0.031, norm='L2', args=args, **kwargs)

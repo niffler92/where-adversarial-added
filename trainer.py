@@ -10,7 +10,7 @@ import submodules.attacks as attacks
 from common.logger import Logger
 from common.summary import EvaluationMetrics
 from common.torch_utils import get_model, get_optimizer, softmax
-from common.utils import get_dirname, show_current_model
+from common.utils import get_dirname
 
 
 class Trainer:
@@ -49,16 +49,19 @@ class Trainer:
         self.optimizer = get_optimizer(self.args.optimizer, params, self.args)
 
     def train(self):
-        show_current_model(self.model, self.args)
         for self.epoch in range(self.start_epoch, self.args.epochs+1):
-            self.adjust_learning_rate([int(self.args.epochs/2), int(self.args.epochs*3/4)], factor=0.1)
+            if self.args.dataset == "ImageNet":
+                milestone = [int(self.args.epochs/3), int(self.args.epochs*2/3)]
+            else:
+                milestone = [int(self.args.epochs/2), int(self.args.epochs*3/4)]
+            self.adjust_learning_rate(milestone, factor=0.1)
+
             self.train_epoch()
             self.save()
             if not self.args.no_eval:
                 self.eval()
 
     def infer(self):
-        show_current_model(self.model, self.args)
         self.eval()
 
     def train_epoch(self):
@@ -72,12 +75,14 @@ class Trainer:
                 labels = labels.cuda()
             if self.args.half:
                 images = images.half()
+                labels = labels.half()
+
+            self.model.train()
+            outputs, loss = self.compute_loss(self.model, images, labels)
 
             # adversarial training with soft labels
             if self.args.adv_ratio is not None:
-                self.source.eval()
-                k = int(len(images)*self.args.adv_ratio)
-                adv_images = self.scheme.generate(images[:k], labels[:k])
+                adv_images = self.scheme.generate(images, labels)
                 adv_outputs = self.model(adv_images)
 
                 soft_labels = softmax(adv_outputs, self.args.distill_T)
@@ -86,10 +91,11 @@ class Trainer:
                 soft_ratio = self.args.distill_ratio
                 adv_labels = soft_ratio*soft_labels + (1 - soft_ratio)*labels
 
-                images[:k] = adv_images
-                labels[:k] = adv_labels
+                self.model.train()
+                _, adv_loss = self.compute_loss(self.model, adv_images, adv_labels)
+                adv_ratio = self.args.adv_ratio
+                loss = adv_ratio*adv_loss + (1 - adv_ratio)*loss
 
-            self.model.train()
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -128,6 +134,7 @@ class Trainer:
                 labels = labels.cuda()
             if self.args.half:
                 images = images.half()
+                labels = labels.half()
 
             outputs, loss = self.compute_loss(self.model, images, labels)
 
@@ -149,7 +156,7 @@ class Trainer:
             eval_metrics.update('Time', elapsed_time, self.args.batch_size)
 
             # No step summaries when training
-            if self.step % self.args.log_step == 0 and self.args.mode == 'infer':
+            if self.step % self.args.log_step == 0 and self.args.mode != 'train':
                 self.logger.scalar_summary(eval_metrics.avg, self.step, 'EVAL')
 
         self.logger.scalar_summary(eval_metrics.avg, self.step, 'EVAL')

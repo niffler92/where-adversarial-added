@@ -8,7 +8,7 @@ import submodules.defenses as defenses
 from common.logger import Logger
 from common.summary import EvaluationMetrics
 from common.torch_utils import get_model
-from common.utils import get_dirname, show_current_model
+from common.utils import get_dirname
 
 
 class Attacker:
@@ -43,9 +43,7 @@ class Attacker:
         self.logger.add_level('DEFENDED', 23, 'cyan')
 
     def run(self):
-        show_current_model(self.model, self.args)
         self.model.eval()
-
         eval_before = EvaluationMetrics(['Top1', 'Top5', 'Time'])
         eval_after = EvaluationMetrics(['Top1', 'Top5', 'Time'])
         eval_defense = EvaluationMetrics(['Top1', 'Top5', 'Time'])
@@ -57,6 +55,7 @@ class Attacker:
                 labels = labels.cuda()
             if self.args.half:
                 images = images.half()
+                labels = labels.half()
             adv_images = images.clone()
 
             outputs, _ = self.compute_loss(self.model, images, labels)

@@ -29,6 +29,7 @@ class CnW:
         self.args = args
 
     def generate(self, images, labels):
+        self.model.eval()
         images = denormalize(images, self.args.dataset)
         _, labels = torch.max(labels, dim=1)
         
@@ -118,7 +119,7 @@ class CnW:
                 actual_tau, _ = torch.max(abs_diff.view(images.size(0),-1), dim=1)
                 tau = self.reduce_tau(tau, actual_tau, update)
 
-        adv_images = normalize(outer_adv_images, self.args.dataset)
+        adv_images = normalize(outer_adv_images, self.args.dataset).detach()
         return adv_images
 
     def clip(self, images):

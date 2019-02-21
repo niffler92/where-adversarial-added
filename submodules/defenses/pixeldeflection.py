@@ -1,3 +1,4 @@
+from argparse import Namespace
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -38,7 +39,7 @@ class PixelDeflection:
         rcam = self.get_rcam(image)
         def_image = self.pixel_deflection(image, rcam, self.ndeflection, self.window)
         def_image = denormalize(def_image.unsqueeze(0), self.args.dataset).squeeze(0)
-        def_image = np.transpose(def_image.cpu().numpy(), [1, 2, 0])
+        def_image = np.transpose(def_image.detach().cpu().numpy(), [1, 2, 0])
         def_image = self.denoise(self.denoiser, def_image, self.sigma)
         def_image = np.transpose(def_image, [2, 0, 1])
         def_image = torch.FloatTensor(def_image).cuda()
@@ -91,7 +92,7 @@ class PixelDeflection:
             weights.append(F.adaptive_max_pool2d(output, (1,1)))
         handle = self.model._modules.get(last_conv).register_forward_hook(hook_weights)
 
-        args = self.args
+        args = Namespace(**vars(self.args))
         args.batch_size = 1
         train_loader, _ = get_loader(args)
         for i, (image, label) in enumerate(train_loader):
@@ -109,7 +110,7 @@ class PixelDeflection:
             self.weights.update(label.item(), weights)
             if (i+1)%1000 == 0:
                 print("\r{:5.1f}% ({}/{})".format((i+1)/len(train_loader)*100, i+1, len(train_loader)), end="")
-        print("\rCreated CAM for {}".format(self.args.model), end="")
+        print("\rCreated CAM for {}".format(self.args.model))
         handle.remove()
 
     def get_rcam(self, image, k=1):

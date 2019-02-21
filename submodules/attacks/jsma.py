@@ -33,6 +33,7 @@ class JSMA:
             self.target = -1
 
     def generate(self, images, labels):
+        self.model.eval()
         self.n_features = int(np.prod(images.shape[1:]))
         self.original_shape = images[0].shape
 
