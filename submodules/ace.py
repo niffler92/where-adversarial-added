@@ -5,7 +5,8 @@ import torch.nn as nn
 import torchvision.models as torch_models
 from common.torch_utils import get_model
 
-__all__ = ['ace', 'ace_resnet50', 'ace_resnet101', 'ace_densenet121', 'ace_vgg19', 'ace_vgg19_bn']
+__all__ = ['ace', 'ace_resnet101', 'ace_densenet121', 'ace_vgg19', 'ace_vgg19_bn']
+__all__ += ['ace_resnet101_random', 'ace_densenet121_random', 'ace_vgg19_random']
 __all__ += ['ace_cifar', 'ace_cifar_random']
 
 
@@ -21,6 +22,7 @@ class ACE(nn.Module):
         # Load all possible combinations
         self.classifiers = nn.ModuleList([])
         self.autoencoders = nn.ModuleList([])
+        self.shifts = []
 
         # Classifiers are always frozen
         for c in classifiers:
@@ -38,22 +40,24 @@ class ACE(nn.Module):
             args.model = a
             model, _ = get_model(args)
             self.autoencoders.append(model)
+            self.shifts.append(shifts[a])
 
         self.lambdas = lambdas
-        self.shifts = shifts
 
     def forward(self, x, ae_only=False):
         classifier = np.random.choice(self.classifiers)
         stacks = np.random.choice(self.stacks)
+
+        # TODO: zip??
         autoencoders = np.random.choice(self.autoencoders, stacks)
         lambdas = np.random.choice(self.lambdas, stacks)
 
         shifts = []
         for _ in range(stacks):
             idx = np.random.choice(len(self.shifts))
-            shifts.append(self.shifts[idx])
 
         for idx, autoencoder in enumerate(autoencoders):
+            shift = np.random.choice(self.shifts[autoencoder]
             l, r, u, d = self.pad_shape(*shifts[idx])
             x_pad = nn.ZeroPad2d(padding=(l,r,u,d))(x)
             w, h = x_pad.shape[-1], x_pad.shape[-2]
@@ -75,11 +79,14 @@ class ACE(nn.Module):
 
 
 # Default configurations
-classifiers = ['densenet121', 'resnet50', 'vgg19', 'vgg19_bn']
-autoencoders = ['unet']
-stacks = [1]
-lambdas = [0, 0.5, 0.7, 0.9, 0.99, 1]
-shifts = [(0,1), (1,0), (0,-1), (-1,0), (1,1), (-1, -1), (1,-1), (-1,1)]
+classifiers = ['densenet121', 'resnet50', 'vgg19', 'vgg19_bn', 'alexnet']
+autoencoders = ['unet', 'unet_v1', 'unet_v2']
+stacks = [5]
+lambdas = [0, 0.5, 1]
+shifts = {'unet': [(0,1), (1,0), (0,-1), (-1,0), (1,1), (-1, -1), (1,-1), (-1,1)],
+          'unet_v1': [(1,0), (-1,0)],
+          'unet_v2': [(0,1), (0,-1)],
+          }
 
 
 def ace(args, **kwargs):
@@ -92,7 +99,7 @@ def ace_resnet50(args, **kwargs):
     global autoencoders, stacks, shifts
     classifiers = ['resnet50']
     lambdas = [1]
-    shifts = [(0,0)]
+    shifts = {'unet': [(0,0)], 'unet_v1': [(0,0)], 'unet_v2': [(0,0)]}
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
 
 def ace_resnet101(args, **kwargs):
@@ -100,7 +107,7 @@ def ace_resnet101(args, **kwargs):
     global autoencoders, stacks, shifts
     classifiers = ['resnet101']
     lambdas = [1]
-    shifts = [(0,0)]
+    shifts = {'unet': [(0,0)], 'unet_v1': [(0,0)], 'unet_v2': [(0,0)]}
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
 
 def ace_densenet121(args, **kwargs):
@@ -108,7 +115,7 @@ def ace_densenet121(args, **kwargs):
     global autoencoders, stacks, shifts
     classifiers = ['densenet121']
     lambdas = [1]
-    shifts = [(0,0)]
+    shifts = {'unet': [(0,0)], 'unet_v1': [(0,0)], 'unet_v2': [(0,0)]}
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
 
 def ace_vgg19(args, **kwargs):
@@ -116,7 +123,7 @@ def ace_vgg19(args, **kwargs):
     global autoencoders, stacks, shifts
     classifiers = ['vgg19']
     lambdas = [1]
-    shifts = [(0,0)]
+    shifts = {'unet': [(0,0)], 'unet_v1': [(0,0)], 'unet_v2': [(0,0)]}
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
 
 def ace_vgg19_bn(args, **kwargs):
@@ -124,7 +131,29 @@ def ace_vgg19_bn(args, **kwargs):
     global autoencoders, stacks, shifts
     classifiers = ['vgg19_bn']
     lambdas = [1]
-    shifts = [(0,0)]
+    shifts = {'unet': [(0,0)], 'unet_v1': [(0,0)], 'unet_v2': [(0,0)]}
+    return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
+
+
+def ace_resnet101_random(args, **kwargs):
+    assert args.dataset == "ImageNet"
+    global autoencoders, stacks, shifts
+    classifiers = ['resnet101']
+    lambdas = [1]
+    return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
+
+def ace_densenet121_random(args, **kwargs):
+    assert args.dataset == "ImageNet"
+    global autoencoders, stacks, shifts
+    classifiers = ['densenet121']
+    lambdas = [1]
+    return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
+
+def ace_vgg19_random(args, **kwargs):
+    assert args.dataset == "ImageNet"
+    global autoencoders, stacks, shifts
+    classifiers = ['vgg19']
+    lambdas = [1]
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
 
 
@@ -133,7 +162,7 @@ def ace_cifar(args, **kwargs):
     global autoencoders, stacks
     classifiers = ['ResNet18']
     lambdas = [1.0]
-    shifts = [(0,0)]
+    shifts = {'unet': [(0,0)], 'unet_v1': [(0,0)], 'unet_v2': [(0,0)]}
     return ACE(classifiers, autoencoders, stacks, lambdas, shifts, args, **kwargs)
 
 def ace_cifar_random(args, **kwargs):

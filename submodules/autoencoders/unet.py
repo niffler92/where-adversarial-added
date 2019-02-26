@@ -205,22 +205,24 @@ class UNet(nn.Module):
 
         if config == 0:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=2)
-            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=2, padding=1, output_padding=1)
+            self.deconv = nn.ConvTranspose2d(self.in_channels, self.in_channels, kernel_size=3, stride=2, padding=1, output_padding=1)
         elif config == 1:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=(2,1))
-            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(2,1), padding=1, output_padding=(1,0))
+            self.deconv = nn.ConvTranspose2d(self.start_filts, self.start_filts, self.in_channels, kernel_size=3, stride=(2,1), padding=1, output_padding=(1,0))
         elif config == 2:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=(1,2))
-            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(1,2), padding=1, output_padding=(0,1))
+            self.deconv = nn.ConvTranspose2d(self.start_filts, self.start_filts, kernel_size=3, stride=(1,2), padding=1, output_padding=(0,1))
         elif config == 3:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=(1,2), stride=(2,4))
-            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(2,4), padding=1, output_padding=(1,3))
+            self.deconv = nn.ConvTranspose2d(self.start_filts, self.start_filts, kernel_size=3, stride=(2,4), padding=1, output_padding=(1,3))
         elif config == 4:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=(2,1), stride=(4,2))
-            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=(4,2), padding=1, output_padding=(3,1))
+            self.deconv = nn.ConvTranspose2d(self.start_filts, self.start_filts, kernel_size=3, stride=(4,2), padding=1, output_padding=(3,1))
         elif config == 5:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=2, stride=4)
-            self.last_conv = nn.ConvTranspose2d(self.start_filts, self.in_channels, kernel_size=3, stride=4, padding=1, output_padding=3)
+            self.deconv = nn.ConvTranspose2d(self.start_filts, self.start_filts, kernel_size=3, stride=4, padding=1, output_padding=3)
+
+        self.last_conv = nn.Conv2d(self.start_filts, self.in_channels, kernel_size=3)
 
     def forward(self, x):
         x = self.first_conv(x)
@@ -235,6 +237,7 @@ class UNet(nn.Module):
             before_pool = encoder_outs[-(i+2)]
             x = module(before_pool, x)
 
+        x = self.deconv(x)
         out = self.last_conv(x)
         return out
 
