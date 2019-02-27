@@ -52,15 +52,32 @@ def get_model(args):
     model.eval()
 
     if model_name in dir(autoencoders):
-        def compute_loss(model, images, labels):
-            criterion = nn.MSELoss()
-            if args.cuda:
-                criterion = criterion.cuda()
-            if args.half:
-                criterion = criterion.half()
-            outputs = model(images)
-            loss = criterion(outputs, images)
-            return None, loss
+        if 'vq_vae' in model_name:
+            def compute_loss(model, images, labels):
+                outputs = model(images)
+                mse_loss = F.mse_loss(outputs, images)
+                vq_loss = torch.mean(torch.norm((model.z_q - model.z_e.detach())**2, 2, 1))
+                commit_loss = torch.mean(torch.norm((model.z_q.detach() - model.z_e)**2, 2, 1))
+                loss = mse_loss + args.vq_coef*vq_loss + args.commit_coef*commit_loss
+                return None, loss
+        elif 'vae' in model_name:
+            def compute_loss(model, images, labels):
+                outputs = model(images)
+                mse_loss = F.mse_loss(outputs, images)
+                kl_loss = -0.5*torch.sum(1 + model.logvar - model.mu**2 - model.logvar.exp())
+                kl_loss /= np.prod(images.shape)
+                loss = mse_loss + args.kl_coef*kl_loss
+                return None, loss
+        else:
+            def compute_loss(model, images, labels):
+                criterion = nn.MSELoss()
+                if args.cuda:
+                    criterion = criterion.cuda()
+                if args.half:
+                    criterion = criterion.half()
+                outputs = model(images)
+                loss = criterion(outputs, images)
+                return None, loss
         return model, compute_loss
 
     elif model_name in dir(ace):

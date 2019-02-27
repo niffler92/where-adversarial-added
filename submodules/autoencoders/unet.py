@@ -7,8 +7,9 @@ import numpy as np
 
 from dataloader import data_stats
 
-__all__ = ['unet', 'unet_mnist']
-__all__ += ['unet_v1', 'unet_v2', 'unet_v3', 'unet_v4', 'unet_v5']
+__all__ = ['unet_v0', 'unet_v1', 'unet_v2', 'unet_v3', 'unet_v4', 'unet_v5']
+__all__ += ['unet_ups_v0', 'unet_ups_v1', 'unet_ups_v2', 'unet_ups_v3', 'unet_ups_v4', 'unet_ups_v5']
+__all__ += ['unet_add_v0', 'unet_add_v1', 'unet_add_v2', 'unet_add_v3', 'unet_add_v4', 'unet_add_v5']
 
 
 def conv3x3(in_channels, out_channels, stride=1,
@@ -205,10 +206,10 @@ class UNet(nn.Module):
 
         if config == 0:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=2)
-            self.deconv = nn.ConvTranspose2d(self.in_channels, self.in_channels, kernel_size=3, stride=2, padding=1, output_padding=1)
+            self.deconv = nn.ConvTranspose2d(self.start_filts, self.start_filts, kernel_size=3, stride=2, padding=1, output_padding=1)
         elif config == 1:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=(2,1))
-            self.deconv = nn.ConvTranspose2d(self.start_filts, self.start_filts, self.in_channels, kernel_size=3, stride=(2,1), padding=1, output_padding=(1,0))
+            self.deconv = nn.ConvTranspose2d(self.start_filts, self.start_filts, kernel_size=3, stride=(2,1), padding=1, output_padding=(1,0))
         elif config == 2:
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=1, stride=(1,2))
             self.deconv = nn.ConvTranspose2d(self.start_filts, self.start_filts, kernel_size=3, stride=(1,2), padding=1, output_padding=(0,1))
@@ -222,7 +223,7 @@ class UNet(nn.Module):
             self.first_conv = nn.Conv2d(self.in_channels, self.in_channels, kernel_size=2, stride=4)
             self.deconv = nn.ConvTranspose2d(self.start_filts, self.start_filts, kernel_size=3, stride=4, padding=1, output_padding=3)
 
-        self.last_conv = nn.Conv2d(self.start_filts, self.in_channels, kernel_size=3)
+        self.last_conv = nn.Conv2d(self.start_filts, self.in_channels, kernel_size=3, padding=1)
 
     def forward(self, x):
         x = self.first_conv(x)
@@ -242,12 +243,8 @@ class UNet(nn.Module):
         return out
 
 
-def unet(args, **kwargs):
+def unet_v0(args, **kwargs):
     return UNet(args=args, **kwargs)
-
-def unet_mnist(args, **kwargs):
-    return UNet(in_channels=1, depth=2, args=args, **kwargs)
-
 
 def unet_v1(args, **kwargs):
     return UNet(config=1, args=args, **kwargs)
@@ -263,3 +260,41 @@ def unet_v4(args, **kwargs):
 
 def unet_v5(args, **kwargs):
     return UNet(config=5, depth=4, args=args, **kwargs)
+
+
+def unet_ups_v0(args, **kwargs):
+    return UNet(up_mode='upsample', args=args, **kwargs)
+
+def unet_ups_v1(args, **kwargs):
+    return UNet(up_mode='upsample', config=1, args=args, **kwargs)
+
+def unet_ups_v2(args, **kwargs):
+    return UNet(up_mode='upsample', config=2, args=args, **kwargs)
+
+def unet_ups_v3(args, **kwargs):
+    return UNet(up_mode='upsample', config=3, depth=4, args=args, **kwargs)
+
+def unet_ups_v4(args, **kwargs):
+    return UNet(up_mode='upsample', config=4, depth=4, args=args, **kwargs)
+
+def unet_ups_v5(args, **kwargs):
+    return UNet(up_mode='upsample', config=5, depth=4, args=args, **kwargs)
+
+
+def unet_add_v0(args, **kwargs):
+    return UNet(merge_mode='add', args=args, **kwargs)
+
+def unet_add_v1(args, **kwargs):
+    return UNet(merge_mode='add', config=1, args=args, **kwargs)
+
+def unet_add_v2(args, **kwargs):
+    return UNet(merge_mode='add', config=2, args=args, **kwargs)
+
+def unet_add_v3(args, **kwargs):
+    return UNet(merge_mode='add', config=3, depth=4, args=args, **kwargs)
+
+def unet_add_v4(args, **kwargs):
+    return UNet(merge_mode='add', config=4, depth=4, args=args, **kwargs)
+
+def unet_add_v5(args, **kwargs):
+    return UNet(merge_mode='add', config=5, depth=4, args=args, **kwargs)

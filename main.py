@@ -154,6 +154,11 @@ if __name__ == '__main__':
     
     parser.add_argument('--fine_tune', action='store_true',
                         help="fine-tune the classifier attached to ace module")
+    
+    # Autoencoder training options
+    parser.add_argument('--kl_coef', default=0.1, type=float)
+    parser.add_argument('--vq_coef', default=1, type=float)
+    parser.add_argument('--commit_coef', default=0.5, type=float)
 
 
     # Attack options
