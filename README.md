@@ -54,7 +54,8 @@ nsml run -d cifar10_ace -a "--dataset CIFAR10 --model ResNet18 --mode train --ad
 ```
 
 CIFAR10에서 fgsm으로 PRM + resnet18 중 PRM만 adversarial training  
-이 경우 resnet18은 pretrained여야 하므로 체크포인트 위치를 지정해주어야 합니다. ckpt_name을 지정해주지 않으면 불러오고자 하는 모델명으로 default입니다. 단 PRM에 사용된 autoencoder의 경우에도 자동으로 체크포인트를 불러오고 있으므로(죄송합니다) 학습이 안 되었더라도 체크포인트 파일이 필요합니다.
+이 경우 resnet18은 pretrained여야 하므로 체크포인트 위치를 지정해주어야 합니다. ckpt_name을 지정해주지 않으면 불러오고자 하는 모델명으로 default입니다. 단 PRM에 사용된 autoencoder의 경우에도 자동으로 체크포인트를 불러오고 있으므로(죄송합니다) 학습이 안 되었더라도 체크포인트 파일이 필요합니다.  
+**여러 체크포인트를 동시에 불러와야 하는 경우, 체크포인트 이름을 각 모델명으로 저장해두어야 합니다.**
 ```
 nsml run -d cifar10_ace -a "--dataset CIFAR10 --model ace_cifar --pretrained --ckpt_dir 체크포인트 위치 --mode train --adv_ratio 0.3 --attack fgsm"
 ```
@@ -85,3 +86,5 @@ ImageNet에서 다른 defense ablation
 ```
 nsml run -d ILSVRC2015 -a "--dataset ImageNet --model resnet101 --pretrained --mode attack --attack fgsm --defense pixeldeflection --log_step 1"
 ```
+  
+./scripts에 더 많은 예시가 있습니다.
