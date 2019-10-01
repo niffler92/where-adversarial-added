@@ -1,7 +1,7 @@
-# ACE: Adversarial Checkerboard Enhancer to Induce and Evade Adversarial Attacks
+# Where to be Adversarial Perturbations Added? Investigating and Manipulating Pixel Robustness Using Input Gradients
 
 This repository contains a PyTorch implementation for the paper
-ACE: Adversarial Checkerboard Enhancer to Induce and Evade Adversarial Attacks (arXiv).
+Where to be Adversarial Perturbations Added? Investigating and Manipulating Pixel Robustness Using Input Gradients
 
 ## Paper Preview
 
@@ -108,14 +108,14 @@ python main.py --mode defense --dataset CIFAR10 --model unet_resnet152 --lambd 0
 ## Citation
 
 ```
-@article{ACE,
-    title={ACE: Adversarial Checkerboard Enhancer to Induce and Evade Adversarial Attacks},
+@article{Where,
+    title={Where to be adversarial perturbations added? Investigating and manipulating pixel robustness using input gradients},
+    booktitle = {7th International Conference on Learning Representations, Debugging Machine Learning Models Workshop, {ICLR} 2019, New Orleans, LA, USA, May 6-9, 2019}
     author={Hwang, Jisung and Kim, Younghoon and Chun, Sanghyuk and Yoo, Jaejun and Kim, Ji-Hoon and Han, Dongyoon and Ha, Jung-Woo},
-    journal={arXiv},
-    year={2018}
+    year={2019}
 }
 ```
 
 ## Contact
 
-Jisung Hwang (), Younghoon Kim (yh01dlx@gmail.com)
+Jisung Hwang (jeshwang92@uchicago.edu), Younghoon Kim (yh01dlx@gmail.com)
